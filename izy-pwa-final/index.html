@@ -1,0 +1,1917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IZY — Weekly Schedule</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* ── THEME: ESPRESSO (default) — warm dark espresso, amber gold ── */
+  --bg:       #090704;
+  --surface:  #100d09;
+  --surface2: #16120d;
+  --border:   #1e1810;
+  --border2:  #261f14;
+  --text:     #ddd0bc;
+  --muted:    #7a6e5c;
+  --dim:      #4a4030;
+
+  --trade:        #e8a020;
+  --trade-bg:     rgba(232,160,32,0.07);
+  --trade-border: rgba(232,160,32,0.35);
+  --trade-title:  #f0c060;
+  --current-shadow: 0 0 0 1px rgba(232,160,32,0.45), 0 2px 20px rgba(232,160,32,0.08);
+  --weekend-color:  #8a6a50;
+  --weekend-active: #b08060;
+  --prep-bg:   rgba(50,36,10,0.35);
+  --prep-bd:   rgba(232,160,32,0.25);
+
+  --danger: #d95f4b;
+}
+
+/* ═══════════════════════════════════════════════════════
+   THEME: TERMINAL — phosphor green on near-black
+   ═══════════════════════════════════════════════════════ */
+[data-theme="terminal"] {
+  --bg:       #020904;  --surface:  #060f08;  --surface2: #091309;
+  --border:   #101e12;  --border2:  #162816;
+  --text:     #7adf90;  --muted:    #3a6444;  --dim:      #1e3a24;
+
+  --trade:        #00e060;
+  --trade-bg:     rgba(0,224,96,0.07);
+  --trade-border: rgba(0,224,96,0.35);
+  --trade-title:  #60ffa0;
+  --current-shadow: 0 0 0 1px rgba(0,224,96,0.5), 0 2px 24px rgba(0,224,96,0.12);
+  --weekend-color:  #2e6e40;   --weekend-active: #50a060;
+  --prep-bg: rgba(0,30,10,0.5); --prep-bd: rgba(0,224,96,0.22);
+
+  --danger: #ff4a36;
+}
+
+/* ═══════════════════════════════════════════════════════
+   THEME: SLATE — cool navy, electric-blue accent
+   ═══════════════════════════════════════════════════════ */
+[data-theme="slate"] {
+  --bg:       #07070f;  --surface:  #0c0d1a;  --surface2: #101222;
+  --border:   #191b2e;  --border2:  #20233c;
+  --text:     #c4cce8;  --muted:    #525878;  --dim:      #2c3050;
+
+  --trade:        #5588f0;
+  --trade-bg:     rgba(85,136,240,0.08);
+  --trade-border: rgba(85,136,240,0.38);
+  --trade-title:  #88aaff;
+  --current-shadow: 0 0 0 1px rgba(85,136,240,0.5), 0 2px 24px rgba(85,136,240,0.12);
+  --weekend-color:  #3a4068;  --weekend-active: #6878b8;
+  --prep-bg: rgba(20,22,55,0.45); --prep-bd: rgba(85,136,240,0.22);
+
+  --danger: #e04860;
+}
+
+/* ═══════════════════════════════════════════════════════
+   THEME: PARCHMENT — warm cream paper, sepia ink
+   ═══════════════════════════════════════════════════════ */
+[data-theme="parchment"] {
+  --bg:       #f5f0e6;  --surface:  #ece6d8;  --surface2: #e4dece;
+  --border:   #d4ccba;  --border2:  #c8c0aa;
+  --text:     #2c2016;  --muted:    #8a7a62;  --dim:      #b8aa90;
+
+  --trade:        #8c4c10;
+  --trade-bg:     rgba(140,76,16,0.08);
+  --trade-border: rgba(140,76,16,0.32);
+  --trade-title:  #6a3408;
+  --current-shadow: 0 0 0 1px rgba(140,76,16,0.4), 0 2px 16px rgba(140,76,16,0.08);
+  --weekend-color:  #a08060;  --weekend-active: #7a5a38;
+  --prep-bg: rgba(180,140,80,0.15); --prep-bd: rgba(140,76,16,0.28);
+
+  --danger: #c02828;
+}
+
+/* ── Smooth transition across all theme-sensitive surfaces ── */
+html, body, .header, .now-panel, .day-tab, .schedule-wrapper,
+.toolbar, .btn, .block-content, .prep-bar, .modal,
+.reset-box, .toast, .footer, .form-group input,
+.form-group textarea, .form-group select {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.25s ease, box-shadow 0.3s ease;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  min-height: 100vh;
+  padding-bottom: 80px;
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+/* ── HEADER ── */
+.header {
+  padding: 28px 32px 20px;
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 14px;
+}
+.header h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 52px;
+  letter-spacing: 3px;
+  line-height: 1;
+}
+.header-sub {
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-top: 5px;
+}
+.header-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+.clock-display {
+  font-family: 'DM Mono', 'Courier New', monospace;
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--text);
+  letter-spacing: 1px;
+  line-height: 1;
+}
+.clock-date {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-top: 2px;
+  text-align: right;
+}
+.badges { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.badge {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  padding: 3px 9px;
+  border-radius: 4px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border: 1px solid;
+}
+.badge-green  { color: var(--trade); border-color: var(--trade-border); background: var(--trade-bg); }
+.badge-yellow { color: var(--muted); border-color: rgba(120,100,60,0.3); background: rgba(60,44,16,0.2); }
+
+/* ── NOW BANNER ── */
+.now-banner { max-width: 900px; margin: 0 auto; padding: 0 32px; }
+.now-inner {
+  display: flex;
+  border: 1px solid var(--border2);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  overflow: hidden;
+}
+.now-panel { flex: 1; padding: 10px 16px; background: var(--surface); }
+.now-panel:first-child { border-right: 1px solid var(--border); }
+.now-panel.is-linked {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.now-panel.is-linked:hover { background: var(--surface2); }
+.now-panel.is-linked .now-panel-label::after { content: ' ↗'; opacity: 0.5; }
+.now-panel-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--dim);
+  margin-bottom: 3px;
+}
+.now-panel-title { font-size: 13px; font-weight: 600; line-height: 1.2; }
+.now-panel-sub { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); margin-top: 2px; }
+.glow-dot {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--trade);
+  box-shadow: 0 0 8px var(--trade);
+  margin-right: 6px;
+  vertical-align: middle;
+  animation: glow 2s ease-in-out infinite;
+}
+@keyframes blockFlash {
+  0%   { filter: brightness(1); }
+  25%  { filter: brightness(1.9); }
+  60%  { filter: brightness(1.5); }
+  100% { filter: brightness(1); }
+}
+.block-flash { animation: blockFlash 0.8s ease-out; }
+@keyframes glow { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* ── DAY TABS ── */
+.day-tabs {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px 32px 0;
+  display: flex;
+  gap: 4px;
+}
+.day-tab {
+  flex: 1;
+  padding: 10px 6px;
+  border-radius: 8px 8px 0 0;
+  border: 1px solid var(--border);
+  border-bottom: none;
+  background: var(--surface);
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s;
+  position: relative;
+  top: 1px;
+}
+.day-tab:hover { color: var(--text); background: var(--surface2); }
+.day-tab.active {
+  background: var(--bg);
+  color: var(--text);
+  border-color: var(--border2);
+  border-bottom-color: var(--bg);
+  font-weight: 600;
+}
+.day-tab.weekend { color: var(--weekend-color); }
+.day-tab.weekend.active { color: var(--weekend-active); }
+.today-dot {
+  display: inline-block;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--trade);
+  margin-left: 4px;
+  vertical-align: middle;
+  position: relative;
+  top: -1px;
+}
+
+/* ── SCHEDULE ── */
+.schedule-wrapper {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 32px;
+  border-top: 1px solid var(--border2);
+}
+
+/* ── TOOLBAR ── */
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0 12px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.toolbar-left { display: flex; align-items: baseline; gap: 8px; }
+.toolbar-day { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 2px; }
+.toolbar-type { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; }
+.toolbar-right { display: flex; gap: 8px; flex-wrap: wrap; }
+.toolbar-right .btn { flex-shrink: 0; }
+
+/* ── BUTTONS ── */
+.btn {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 7px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--border2);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn:hover { color: var(--text); background: var(--surface2); }
+.btn-primary { background: rgba(232,160,32,0.1); color: var(--trade); border-color: var(--trade-border); }
+.btn-primary:hover { background: rgba(232,160,32,0.18); }
+.btn-add { background: rgba(232,160,32,0.1); color: var(--trade); border-color: var(--trade-border); font-weight: 600; }
+.btn-add:hover { background: rgba(232,160,32,0.18); color: var(--trade); }
+.btn-danger { color: var(--danger); border-color: rgba(217,95,75,0.35); }
+.btn-danger:hover { background: rgba(217,95,75,0.1); }
+
+/* Fix G: Undo button — disabled when no action to undo, styled distinctly */
+.btn-undo { color: var(--dim); border-color: var(--border); }
+.btn-undo:not(:disabled):hover { color: var(--text); background: var(--surface2); }
+.btn-undo:disabled { opacity: 0.35; cursor: not-allowed; }
+.btn-undo.has-undo { color: var(--trade); border-color: var(--trade-border); background: rgba(232,160,32,0.05); }
+.btn-undo.has-undo:hover { background: rgba(232,160,32,0.12); }
+
+/* Fix H: toolbar visual separators between logical groups */
+.toolbar-sep {
+  width: 1px; background: var(--border2); align-self: stretch;
+  margin: 0 2px; flex-shrink: 0;
+}
+
+/* ── LEGEND ── */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.legend-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+/* ── SCHEDULE ── */
+.schedule { position: relative; }
+
+.schedule::before {
+  content: '';
+  position: absolute;
+  left: 62px; top: 0; bottom: 0;
+  width: 1px;
+  background: var(--border);
+}
+
+.block-row { display: flex; margin-bottom: 3px; position: relative; }
+.time-col {
+  width: 62px;
+  flex-shrink: 0;
+  padding-right: 14px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding-top: 11px;
+}
+.time-label { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text); white-space: nowrap; }
+.block-content {
+  flex: 1;
+  margin-left: 14px;
+  border-radius: 8px;
+  border-left: 3px solid;
+  padding: 10px 90px 10px 13px;
+  position: relative;
+  cursor: pointer;
+  transition: filter 0.15s;
+  user-select: none;
+}
+.block-content:hover { filter: brightness(1.2); }
+.block-content.current-block {
+  box-shadow: var(--current-shadow);
+  filter: brightness(1.15);
+}
+/* Block titles — all identical */
+.block-title { font-size: 13px; font-weight: 600; line-height: 1.3; display: block; color: var(--text); }
+
+/* Subtitles — layout + color merged */
+.block-sub { font-size: 11px; margin-top: 3px; line-height: 1.4; color: var(--muted); }
+.block-duration {
+  position: absolute; top: 10px; right: 36px;
+  font-family: 'DM Mono', monospace; font-size: 10px;
+  color: var(--muted); opacity: 0.6;
+}
+.block-edit-btn {
+  position: absolute; top: 50%; right: 10px; transform: translateY(-50%);
+  background: none; border: none; color: var(--muted); cursor: pointer;
+  opacity: 0; transition: opacity 0.15s; font-size: 14px; padding: 4px;
+}
+.block-content:hover .block-edit-btn { opacity: 0.7; }
+.block-content:hover .block-edit-btn:hover { opacity: 1; }
+.now-tag {
+  display: block; font-family: 'DM Mono', monospace; font-size: 9px;
+  letter-spacing: 1px; text-transform: uppercase; color: var(--trade);
+  margin-bottom: 4px; animation: glow 2s ease-in-out infinite;
+}
+
+/* ── PREP ROW ── */
+.prep-row { display: flex; margin-bottom: 3px; }
+.prep-spacer {
+  width: 62px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: flex-end; padding-right: 14px;
+}
+.prep-time { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); opacity: 0.7; }
+.prep-bar {
+  flex: 1; margin-left: 14px; border-radius: 5px; padding: 5px 12px;
+  background: var(--prep-bg); border-left: 2px solid var(--prep-bd);
+  font-size: 10px; color: var(--muted); opacity: 0.75; font-family: 'DM Mono', monospace;
+  letter-spacing: 0.5px; display: flex; align-items: center; gap: 7px;
+  cursor: pointer; transition: opacity 0.15s;
+}
+.prep-bar:hover { opacity: 1; }
+.prep-pulse { font-size: 7px; animation: pulse 2.5s ease-in-out infinite; color: var(--trade); }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.25} }
+
+.hour-sep { height: 1px; background: var(--border); margin: 6px 0 6px 76px; opacity: 0.35; }
+
+/* ── BLOCK COLORS — all identical at base; per-block colour applied via inline style ── */
+/* Category classes kept for data compatibility but no longer drive visual style */
+.t-trade, .t-sleep, .t-meal, .t-move,
+.t-life,  .t-admin, .t-study, .t-free {
+  background: var(--surface);
+  border-color: var(--border2);
+}
+
+/* ── BLOCK COLOR PICKER ── */
+.color-picker-row {
+  margin-bottom: 15px;
+}
+.color-picker-row label {
+  display: block; font-family: 'DM Mono', monospace; font-size: 10px;
+  text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); margin-bottom: 8px;
+}
+.color-swatches {
+  display: flex; flex-wrap: wrap; gap: 7px; align-items: center;
+}
+.color-swatch {
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 2px solid transparent; cursor: pointer;
+  transition: transform 0.12s, border-color 0.12s;
+  flex-shrink: 0;
+}
+.color-swatch:hover { transform: scale(1.2); }
+.color-swatch.selected { border-color: var(--text); transform: scale(1.15); }
+.color-swatch-none {
+  background: var(--surface); border: 1px dashed var(--border2);
+  color: var(--muted); font-size: 11px; display: flex;
+  align-items: center; justify-content: center; border-radius: 50%;
+  width: 22px; height: 22px; cursor: pointer; flex-shrink: 0;
+  transition: border-color 0.12s;
+}
+.color-swatch-none:hover, .color-swatch-none.selected { border-color: var(--muted); }
+.color-custom-input {
+  width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border2);
+  cursor: pointer; background: none; padding: 0; overflow: hidden;
+  flex-shrink: 0;
+}
+.color-custom-input::-webkit-color-swatch-wrapper { padding: 0; }
+.color-custom-input::-webkit-color-swatch { border: none; border-radius: 4px; }
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.72); z-index: 100;
+  align-items: center; justify-content: center;
+  backdrop-filter: blur(4px);
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--surface2); border: 1px solid var(--border2); border-radius: 12px;
+  padding: 28px; width: 460px; max-width: 95vw; max-height: 90vh; overflow-y: auto;
+  animation: slideUp 0.2s ease;
+}
+@keyframes slideUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none} }
+
+/* Fix K: modal header with title + close button */
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 22px;
+}
+.modal-header h2 {
+  font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px;
+  color: var(--text); margin: 0;
+}
+.modal-close-btn {
+  background: none; border: none; color: var(--muted); cursor: pointer;
+  font-size: 18px; line-height: 1; padding: 4px 6px; border-radius: 4px;
+  transition: color 0.15s, background 0.15s; flex-shrink: 0;
+}
+.modal-close-btn:hover { color: var(--text); background: var(--border2); }
+
+.form-group { margin-bottom: 15px; }
+.form-group label {
+  display: block; font-family: 'DM Mono', monospace; font-size: 10px;
+  text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); margin-bottom: 6px;
+}
+.form-group input, .form-group textarea, .form-group select {
+  width: 100%; background: var(--surface); border: 1px solid var(--border2);
+  border-radius: 6px; color: var(--text); font-family: 'DM Sans', sans-serif;
+  font-size: 13px; padding: 9px 12px; outline: none; transition: border-color 0.15s;
+}
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: var(--trade); }
+.form-group select:disabled { opacity: 0.35; cursor: not-allowed; }
+.form-group textarea { resize: vertical; min-height: 60px; }
+.form-group select option { background: var(--surface2); }
+.form-row { display: flex; gap: 12px; }
+.form-row .form-group { flex: 1; }
+
+/* Fix B: prep check row — appears ABOVE category */
+.prep-check-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+.prep-check-row input[type=checkbox] { width: 14px; height: 14px; accent-color: var(--trade); cursor: pointer; flex-shrink: 0; }
+.prep-check-row label { font-size: 12px; color: var(--muted); cursor: pointer; line-height: 1.4; }
+
+/* Fix F+E: modal footer restructured — overlap warning + delete confirm + actions all live here */
+.modal-footer {
+  margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--border);
+}
+/* Normal action row: Cancel on left, Delete+Save on right */
+.modal-footer-actions {
+  display: flex; justify-content: space-between; align-items: center;
+}
+.modal-footer-right { display: flex; gap: 8px; }
+
+/* Fix F: overlap warning moved into footer zone — buttons always at bottom */
+.overlap-warning {
+  display: none; margin-bottom: 14px;
+  padding: 10px 13px; border-radius: 6px;
+  background: rgba(232,160,32,0.06); border: 1px solid rgba(232,160,32,0.25);
+  font-size: 12px; color: var(--muted); font-family: 'DM Mono', monospace;
+  letter-spacing: 0.3px; line-height: 1.6;
+}
+.overlap-warning.show { display: block; }
+.overlap-warning strong { color: var(--text); display: block; margin-bottom: 5px; }
+.overlap-warning-btns { display: flex; gap: 8px; margin-top: 10px; justify-content: flex-end; }
+
+/* Fix E: delete confirm banner replaces footer actions in-place */
+.delete-confirm-banner {
+  display: none;
+  padding: 11px 14px; margin-bottom: 14px;
+  border-radius: 6px; border: 1px solid rgba(217,95,75,0.4);
+  background: rgba(217,95,75,0.07);
+  font-size: 12px; color: var(--muted); font-family: 'DM Mono', monospace;
+}
+.delete-confirm-banner.show { display: block; }
+.delete-confirm-msg { display: block; color: #e09080; margin-bottom: 10px; letter-spacing: 0.5px; }
+.delete-confirm-btns { display: flex; gap: 8px; justify-content: flex-end; }
+
+/* Inline modal error */
+.modal-error {
+  display: none; margin-bottom: 14px;
+  padding: 9px 12px; border-radius: 6px;
+  background: rgba(217,95,75,0.1); border: 1px solid rgba(217,95,75,0.35);
+  font-size: 12px; color: #e09080; font-family: 'DM Mono', monospace;
+  letter-spacing: 0.5px; line-height: 1.5;
+}
+.modal-error.show { display: block; }
+
+/* ── RESET CONFIRM ── */
+.reset-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.75); z-index: 200;
+  align-items: center; justify-content: center;
+}
+.reset-overlay.open { display: flex; }
+.reset-box {
+  background: var(--surface2); border: 1px solid rgba(217,95,75,0.4);
+  border-radius: 12px; padding: 28px; max-width: 380px; width: 90%; text-align: center;
+}
+.reset-box h3 {
+  font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 2px;
+  color: var(--danger); margin-bottom: 12px;
+}
+.reset-box p { font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 20px; }
+.reset-box-btns { display: flex; gap: 10px; justify-content: center; }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: 28px; right: 28px;
+  background: var(--surface2); border: 1px solid var(--border2); border-left: 3px solid var(--trade);
+  border-radius: 8px; padding: 12px 18px;
+  font-family: 'DM Mono', monospace; font-size: 11px; color: var(--trade);
+  letter-spacing: 1px; text-transform: uppercase;
+  opacity: 0; transform: translateY(8px);
+  transition: all 0.25s; pointer-events: none; z-index: 300;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+
+/* ── FOOTER ── */
+.footer {
+  max-width: 900px; margin: 32px auto 0;
+  padding: 16px 32px; border-top: 1px solid var(--border);
+}
+.footer p {
+  font-family: 'DM Mono', monospace; font-size: 10px; color: var(--dim);
+  letter-spacing: 1px; line-height: 1.8; text-transform: uppercase;
+}
+
+@media (max-width: 600px) {
+  .header { padding: 20px 16px 16px; }
+  .header h1 { font-size: 36px; }
+  .clock-display { font-size: 16px; }
+  .day-tabs { padding: 16px 16px 0; }
+  .schedule-wrapper { padding: 0 16px; }
+  .now-banner { padding: 0 16px; }
+  .footer { padding: 16px; }
+  .block-content { padding-right: 40px; }
+  .block-duration { display: none; }
+  .toolbar { flex-direction: column; align-items: flex-start; }
+  .toolbar-right { width: 100%; justify-content: flex-start; }
+  .toolbar-right .btn { font-size: 10px; padding: 6px 10px; }
+  /* Fix D: always show edit affordance on touch/mobile */
+  .block-edit-btn { opacity: 0.45 !important; }
+}
+
+/* Fix C: floating add block button */
+.fab-add {
+  position: fixed; bottom: 28px; left: 28px;
+  width: 48px; height: 48px; border-radius: 50%;
+  background: var(--trade-bg); border: 1px solid var(--trade-border);
+  color: var(--trade); font-size: 24px; font-weight: 300; line-height: 1;
+  cursor: pointer; z-index: 50;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s; box-shadow: 0 2px 16px rgba(0,0,0,0.3);
+}
+.fab-add:hover {
+  background: var(--trade-border);
+  box-shadow: 0 0 20px var(--trade-bg), 0 2px 16px rgba(0,0,0,0.3);
+  transform: scale(1.08);
+}
+
+/* Fix G: toast with inline undo button */
+.toast {
+  position: fixed; bottom: 28px; right: 28px;
+  background: var(--surface2); border: 1px solid var(--border2); border-left: 3px solid var(--trade);
+  border-radius: 8px; padding: 10px 14px;
+  font-family: 'DM Mono', monospace; font-size: 11px; color: var(--trade);
+  letter-spacing: 1px; text-transform: uppercase;
+  opacity: 0; transform: translateY(8px);
+  transition: opacity 0.25s, transform 0.25s; z-index: 300;
+  display: flex; align-items: center; gap: 10px;
+  pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
+.toast-undo-btn {
+  background: none; border: 1px solid var(--trade-border); border-radius: 4px;
+  color: var(--trade); font-family: 'DM Mono', monospace; font-size: 10px;
+  letter-spacing: 1px; text-transform: uppercase; cursor: pointer; padding: 3px 8px;
+  transition: background 0.15s; flex-shrink: 0;
+}
+.toast-undo-btn:hover { background: var(--trade-bg); }
+
+/* ── THEME PICKER ── */
+.theme-picker {
+  display: flex; align-items: center; gap: 5px; margin-top: 4px;
+}
+.theme-picker-label {
+  font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--muted); margin-right: 2px; user-select: none;
+}
+.theme-swatch {
+  width: 22px; height: 22px; border-radius: 50%; padding: 2px;
+  background: var(--surface2); border: 1px solid var(--border2);
+  cursor: pointer; transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.theme-swatch:hover { transform: scale(1.18); border-color: var(--muted); }
+.theme-swatch.active {
+  border: 2px solid var(--text); padding: 1px;
+  box-shadow: 0 0 0 1px var(--trade);
+}
+.swatch-inner {
+  width: 12px; height: 12px; border-radius: 50%; display: block; pointer-events: none;
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div>
+    <h1>Weekly Schedule</h1>
+    <div class="header-sub">Integrated Trading + Life — 4H Framework</div>
+  </div>
+  <div class="header-right">
+    <div class="clock-display" id="clockTime">--:--:-- --</div>
+    <div class="clock-date" id="clockDate">---</div>
+    <div class="badges">
+      <span class="badge badge-green">5× Daily Trade Checks</span>
+      <span class="badge badge-yellow">Click any block to edit</span>
+    </div>
+    <div class="theme-picker" id="themePicker">
+      <span class="theme-picker-label">Theme</span>
+      <button class="theme-swatch" data-theme="espresso" title="Espresso">
+        <span class="swatch-inner" style="background:#e8a020"></span>
+      </button>
+      <button class="theme-swatch" data-theme="terminal" title="Terminal">
+        <span class="swatch-inner" style="background:#00e060"></span>
+      </button>
+      <button class="theme-swatch" data-theme="slate" title="Slate">
+        <span class="swatch-inner" style="background:#5588f0"></span>
+      </button>
+      <button class="theme-swatch" data-theme="parchment" title="Parchment">
+        <span class="swatch-inner" style="background:#8c4c10"></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- NOW BANNER -->
+<div class="now-banner" id="nowBanner" style="display:none">
+  <div class="now-inner">
+    <div class="now-panel">
+      <div class="now-panel-label">▶ Now Active</div>
+      <div class="now-panel-title" id="nowTitle" style="color:var(--trade)">—</div>
+      <div class="now-panel-sub" id="nowSub">—</div>
+    </div>
+    <div class="now-panel">
+      <div class="now-panel-label">⏭ Up Next</div>
+      <div class="now-panel-title" id="nextTitle" style="color:var(--muted)">—</div>
+      <div class="now-panel-sub" id="nextSub">—</div>
+    </div>
+  </div>
+</div>
+
+<!-- DAY TABS -->
+<div class="day-tabs" id="dayTabs"></div>
+
+<!-- SCHEDULE WRAPPER -->
+<div class="schedule-wrapper">
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <span class="toolbar-day" id="toolbarDay">Monday</span>
+      <span class="toolbar-type" id="toolbarType">· Weekday</span>
+    </div>
+    <div class="toolbar-right">
+      <button class="btn btn-add" onclick="openModal(null)">+ Add Block</button>
+      <button class="btn btn-undo" id="undoBtn" onclick="undoLastAction()" title="Undo last add, edit, delete or reset" disabled>Undo</button>
+      <div class="toolbar-sep"></div>
+      <button class="btn" onclick="exportSchedule()" title="Export schedule as JSON">Export</button>
+      <button class="btn" id="importTriggerBtn" onclick="showImportConfirm()" title="Import a previously exported JSON">Import</button>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importSchedule(event)">
+      <button class="btn" onclick="saveSchedule()" title="All edits are auto-saved. Click to confirm.">Force Save</button>
+      <div class="toolbar-sep"></div>
+      <button class="btn" id="notifBtn" onclick="toggleNotifications()" title="Toggle block start notifications">🔕 Notifs Off</button>
+      <div class="toolbar-sep"></div>
+      <button class="btn btn-danger" onclick="showResetConfirm()" title="Reset this day to its default template">Reset Day</button>
+    </div>
+  </div>
+
+  <div class="schedule" id="scheduleBody"></div>
+
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <p>◈ Arrive 3–5 min before every candle close &nbsp;·&nbsp; Overnight 03:00 candle skipped for sleep &nbsp;·&nbsp; Changes saved automatically to this browser</p>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modalTitle">Edit Block</h2>
+      <button class="modal-close-btn" onclick="closeModal()" title="Close (Esc)">✕</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Start Time</label>
+        <input type="time" id="fTime" />
+      </div>
+      <div class="form-group">
+        <label>Duration</label>
+        <input type="text" id="fDuration" placeholder="e.g. 45m or 1h 30m" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Title</label>
+      <input type="text" id="fTitle" placeholder="Block title" />
+    </div>
+    <div class="form-group">
+      <label>Description</label>
+      <textarea id="fSub" placeholder="Optional details..."></textarea>
+    </div>
+    <!-- Prep checkbox BEFORE Category — it disables category, so it must precede it -->
+    <div class="prep-check-row">
+      <input type="checkbox" id="fIsPrep" onchange="clearModalError();" />
+      <label for="fIsPrep">Show as candle prep alert (amber bar)</label>
+    </div>
+    <!-- Hidden type field — kept for data compatibility with existing blocks -->
+    <input type="hidden" id="fType" value="t-free" />
+    <!-- Per-block colour picker -->
+    <div class="color-picker-row" id="colorPickerRow">
+      <label>Block Colour</label>
+      <div class="color-swatches" id="colorSwatches">
+        <div class="color-swatch-none selected" id="swatchNone" title="No colour" onclick="selectSwatch(null)">—</div>
+        <div class="color-swatch" style="background:#e8a020" data-color="#e8a020" title="Amber"       onclick="selectSwatch('#e8a020')"></div>
+        <div class="color-swatch" style="background:#e85020" data-color="#e85020" title="Orange-red"  onclick="selectSwatch('#e85020')"></div>
+        <div class="color-swatch" style="background:#d94060" data-color="#d94060" title="Red"         onclick="selectSwatch('#d94060')"></div>
+        <div class="color-swatch" style="background:#b040d0" data-color="#b040d0" title="Purple"      onclick="selectSwatch('#b040d0')"></div>
+        <div class="color-swatch" style="background:#5588f0" data-color="#5588f0" title="Blue"        onclick="selectSwatch('#5588f0')"></div>
+        <div class="color-swatch" style="background:#20a8d8" data-color="#20a8d8" title="Cyan"        onclick="selectSwatch('#20a8d8')"></div>
+        <div class="color-swatch" style="background:#20c890" data-color="#20c890" title="Teal"        onclick="selectSwatch('#20c890')"></div>
+        <div class="color-swatch" style="background:#40b840" data-color="#40b840" title="Green"       onclick="selectSwatch('#40b840')"></div>
+        <div class="color-swatch" style="background:#a0c830" data-color="#a0c830" title="Lime"        onclick="selectSwatch('#a0c830')"></div>
+        <div class="color-swatch" style="background:#708090" data-color="#708090" title="Slate grey"  onclick="selectSwatch('#708090')"></div>
+        <div class="color-swatch" style="background:#c0a890" data-color="#c0a890" title="Sand"        onclick="selectSwatch('#c0a890')"></div>
+        <input type="color" class="color-custom-input" id="colorCustom" title="Custom colour" value="#e8a020" oninput="selectSwatch(this.value)" />
+      </div>
+    </div>
+    <div class="modal-error" id="modalError"></div>
+    <!-- Footer: overlap warning replaces action buttons when active -->
+    <div class="modal-footer">
+      <!-- Overlap warning lives in the footer so it appears where user attention already is -->
+      <div class="overlap-warning" id="overlapWarning">
+        <strong id="overlapMsg"></strong>
+        <span id="overlapList"></span>
+        <div class="overlap-warning-btns">
+          <button class="btn" onclick="dismissOverlap()">← Go Back</button>
+          <button class="btn btn-primary" onclick="saveBlockForce()">Save Anyway</button>
+        </div>
+      </div>
+      <!-- Delete confirm banner — shown in-place when delete is armed -->
+      <div class="delete-confirm-banner" id="deleteConfirmBanner">
+        <span class="delete-confirm-msg">Delete this block permanently?</span>
+        <div class="delete-confirm-btns">
+          <button class="btn" onclick="cancelDeleteArm()">Keep Block</button>
+          <button class="btn btn-danger" onclick="deleteBlock()">Yes, Delete</button>
+        </div>
+      </div>
+      <!-- Normal footer actions -->
+      <div class="modal-footer-actions" id="footerActions">
+        <button class="btn" onclick="closeModal()">Cancel</button>
+        <div class="modal-footer-right">
+          <button class="btn btn-danger" id="deleteBtn" onclick="armDelete()" style="display:none">Delete Block</button>
+          <button class="btn btn-primary" id="saveBtn" onclick="saveBlock()">Save Block</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT PRE-CONFIRM (warns BEFORE the file picker opens) -->
+<div class="reset-overlay" id="importPreConfirm">
+  <div class="reset-box">
+    <h3>Import Schedule?</h3>
+    <p>This will <strong>replace your entire schedule</strong> with data from a JSON file. Your current schedule will be lost unless you export it first.</p>
+    <div class="reset-box-btns">
+      <button class="btn" onclick="closeImportPreConfirm()">Cancel</button>
+      <button class="btn btn-danger" onclick="proceedToFilePicker()">Choose File →</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT CONFIRM -->
+<div class="reset-overlay" id="importOverlay">
+  <div class="reset-box">
+    <h3>Replace Schedule?</h3>
+    <p>This will replace your entire schedule with the imported file. This cannot be undone.</p>
+    <div class="reset-box-btns">
+      <button class="btn" onclick="closeImportConfirm()">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmImport()">Replace Schedule</button>
+    </div>
+  </div>
+</div>
+
+<!-- RESET CONFIRM -->
+<div class="reset-overlay" id="resetOverlay">
+  <div class="reset-box">
+    <h3>Reset Day?</h3>
+    <p>This will restore the default template for <strong id="resetDayName">this day</strong>. Your saved changes will be lost.</p>
+    <div class="reset-box-btns">
+      <button class="btn" onclick="closeResetConfirm()">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmReset()">Reset to Default</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span id="toastMsg"></span>
+  <button class="toast-undo-btn" id="toastUndoBtn" onclick="undoLastAction()" style="display:none">Undo</button>
+</div>
+
+<!-- FLOATING ADD BUTTON -->
+<button class="fab-add" onclick="openModal(null)" title="Add a new block">+</button>
+
+<script>
+// ─────────────────────────────────────────────────────
+// TEMPLATES
+// ─────────────────────────────────────────────────────
+const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+const WEEKEND_IDS = [5, 6];
+const STORAGE_KEY = 'izy-weekly-schedule-v2';
+
+const WEEKDAY_TEMPLATE = [
+  { time:'06:00', title:'Morning Routine', sub:"Hygiene, dress, journaling, intentions + yesterday's trade review. No rushing.", type:'t-admin', duration:'55m', prep:false },
+  { time:'06:55', title:'PREP', sub:'Prepare for 07:00 candle close', type:'prep', duration:'', prep:true },
+  { time:'07:00', title:'◈ Trade Check #1 — 07:00 Candle', sub:'Analyse close, mark structure, update orders if needed', type:'t-trade', duration:'15m', prep:false },
+  { time:'07:15', title:'Breakfast', sub:'Eat properly, hydrate — no screens if possible', type:'t-meal', duration:'30m', prep:false },
+  { time:'07:45', title:'Admin + Personal Tasks', sub:'Emails, errands, life admin, course-related planning — clear the plate early', type:'t-admin', duration:'1h 45m', prep:false },
+  { time:'09:30', title:'Study Block #1', sub:'Deep focus — lectures, reading, assignments. No interruptions.', type:'t-study', duration:'1h 25m', prep:false },
+  { time:'10:55', title:'PREP', sub:'Prepare for 11:00 candle close', type:'prep', duration:'', prep:true },
+  { time:'11:00', title:'◈ Trade Check #2 — 11:00 Candle', sub:'Mid-morning review, manage open positions', type:'t-trade', duration:'15m', prep:false },
+  { time:'11:15', title:'Study Block #2', sub:'Continue coursework, problem sets, or revision — longest focus window of the day', type:'t-study', duration:'1h 45m', prep:false },
+  { time:'13:00', title:'Lunch + Short Walk', sub:'Eat, get outside, mental reset — protect this gap', type:'t-meal', duration:'1h', prep:false },
+  { time:'14:00', title:'Study Block #3 — Light Review', sub:'Notes review, flashcards, or lighter coursework — lower intensity after lunch', type:'t-study', duration:'55m', prep:false },
+  { time:'14:55', title:'PREP', sub:'Prepare for 15:00 candle close', type:'prep', duration:'', prep:true },
+  { time:'15:00', title:'◈ Trade Check #3 — 15:00 Candle', sub:'Afternoon session — key US open overlap window', type:'t-trade', duration:'15m', prep:false },
+  { time:'15:15', title:'Daily Movement', sub:'Gym / walk / skipping — breaks the desk run perfectly', type:'t-move', duration:'45m', prep:false },
+  { time:'16:00', title:'Freshen Up', sub:'Shower, change — transition out of work mode', type:'t-admin', duration:'20m', prep:false },
+  { time:'16:20', title:'Free / Flexible Block', sub:'Unscheduled — social, errands, rest, or overflow study if needed', type:'t-free', duration:'1h 40m', prep:false },
+  { time:'18:00', title:'Dinner', sub:'Evening meal — sit down, no rushing', type:'t-meal', duration:'1h', prep:false },
+  { time:'18:55', title:'PREP', sub:'Prepare for 19:00 candle close', type:'prep', duration:'', prep:true },
+  { time:'19:00', title:'◈ Trade Check #4 — 19:00 Candle', sub:'Evening review, set overnight orders if applicable', type:'t-trade', duration:'15m', prep:false },
+  { time:'19:15', title:'Primary Hobby', sub:'Walk, photography, sport — extended window', type:'t-life', duration:'1h 15m', prep:false },
+  { time:'20:30', title:'Chill / Social / Light Activities', sub:'TV, calls, reading, casual screen time — decompress fully', type:'t-life', duration:'2h', prep:false },
+  { time:'22:55', title:'PREP', sub:'Prepare for 23:00 candle close', type:'prep', duration:'', prep:true },
+  { time:'23:00', title:'◈ Trade Check #5 — 23:00 Candle (Final)', sub:'Final check, log results, write closing trade journal entry', type:'t-trade', duration:'15m', prep:false },
+  { time:'23:15', title:'Wind Down', sub:'No screens, dim lights, reading or stretching — let the mind settle', type:'t-admin', duration:'1h', prep:false },
+  { time:'00:15', title:'Sleep', sub:'Core rest — ~5h 45m overnight', type:'t-sleep', duration:'~5h 45m', prep:false },
+];
+
+const WEEKEND_TEMPLATE = [
+  { time:'00:15', title:'Sleep', sub:'Weekend rest — aim for a full 7–8 hours', type:'t-sleep', duration:'~7h 45m', prep:false },
+  { time:'08:00', title:'Morning Routine', sub:'Slower wake-up — hygiene, coffee, light journal. Weekend pace.', type:'t-admin', duration:'55m', prep:false },
+  { time:'08:55', title:'PREP', sub:'Prepare for 09:00 candle close', type:'prep', duration:'', prep:true },
+  { time:'09:00', title:'◈ Trade Check #1 — 09:00 Candle (Delayed Review)', sub:'Review the overnight + early candle — no alarm stress on weekends', type:'t-trade', duration:'20m', prep:false },
+  { time:'09:20', title:'Breakfast — Leisurely', sub:'Proper sit-down breakfast, hydrate, read or listen to something', type:'t-meal', duration:'45m', prep:false },
+  { time:'10:05', title:'Free Time / Personal Projects', sub:'Catch up on anything personal — completely unscheduled', type:'t-free', duration:'50m', prep:false },
+  { time:'10:55', title:'PREP', sub:'Prepare for 11:00 candle close', type:'prep', duration:'', prep:true },
+  { time:'11:00', title:'◈ Trade Check #2 — 11:00 Candle', sub:'Weekend check — lighter review, lower session volume expected', type:'t-trade', duration:'15m', prep:false },
+  { time:'11:15', title:'Free Time / Errands', sub:'Shopping, admin, social plans, or simply relax', type:'t-free', duration:'1h 45m', prep:false },
+  { time:'13:00', title:'Lunch + Extended Walk', sub:'Eat well, longer walk — weekend is for recharging', type:'t-meal', duration:'1h 30m', prep:false },
+  { time:'14:30', title:'Hobby / Leisure Block', sub:'Photography, sport, creative work — extended focus on what you enjoy', type:'t-life', duration:'25m', prep:false },
+  { time:'14:55', title:'PREP', sub:'Prepare for 15:00 candle close', type:'prep', duration:'', prep:true },
+  { time:'15:00', title:'◈ Trade Check #3 — 15:00 Candle', sub:'Afternoon check — manage positions, no overtrading on weekends', type:'t-trade', duration:'15m', prep:false },
+  { time:'15:15', title:'Movement / Sport', sub:'Gym, long walk, sports with friends — use the free afternoon', type:'t-move', duration:'1h', prep:false },
+  { time:'16:15', title:'Freshen Up', sub:'Shower, change for the evening', type:'t-admin', duration:'20m', prep:false },
+  { time:'16:35', title:'Social / Free Afternoon', sub:'Friends, family, outings — guard this block heavily on weekends', type:'t-life', duration:'1h 25m', prep:false },
+  { time:'18:00', title:'Dinner', sub:'Weekend dinner — cook something proper or go out', type:'t-meal', duration:'1h', prep:false },
+  { time:'18:55', title:'PREP', sub:'Prepare for 19:00 candle close', type:'prep', duration:'', prep:true },
+  { time:'19:00', title:'◈ Trade Check #4 — 19:00 Candle', sub:'Evening check — brief, then fully switch off', type:'t-trade', duration:'15m', prep:false },
+  { time:'19:15', title:'Evening Leisure', sub:'Social, entertainment, hobbies — full switch-off from charts', type:'t-life', duration:'3h 15m', prep:false },
+  { time:'22:30', title:'Light Wind Down', sub:'Ease into the end of the weekend — earlier than weekdays', type:'t-admin', duration:'25m', prep:false },
+  { time:'22:55', title:'PREP', sub:'Prepare for 23:00 candle close', type:'prep', duration:'', prep:true },
+  { time:'23:00', title:'◈ Trade Check #5 — 23:00 Candle (Final)', sub:'Final check — log, journal, done for the weekend', type:'t-trade', duration:'15m', prep:false },
+  { time:'23:15', title:'Wind Down + Sleep Prep', sub:'No screens, quiet time, earlier sleep target on Sunday', type:'t-admin', duration:'45m', prep:false },
+  { time:'00:00', title:'Sleep ↩', sub:'Back to weekday rhythm tomorrow', type:'t-sleep', duration:'→', prep:false },
+];
+
+// ─────────────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────────────
+const todayIdx = () => { const d = new Date().getDay(); return d === 0 ? 6 : d - 1; };
+let currentDay = todayIdx();
+let weekData = {};
+let editingIndex = null;
+let toastTimer = null;
+let clockInterval = null;
+const undoStack = {}; // { [dayIndex]: blockArray } — one undo level per day
+
+const clone = obj => JSON.parse(JSON.stringify(obj));
+
+function getTemplate(i) {
+  return clone(WEEKEND_IDS.includes(i) ? WEEKEND_TEMPLATE : WEEKDAY_TEMPLATE);
+}
+
+// ─────────────────────────────────────────────────────
+// STORAGE
+// ─────────────────────────────────────────────────────
+function loadFromStorage() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Validate it's a plain object (not array/string/null)
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        weekData = parsed;
+      } else {
+        weekData = {};
+      }
+    }
+  } catch(e) { weekData = {}; }
+  for (let i = 0; i < 7; i++) {
+    if (!weekData[i] || !Array.isArray(weekData[i])) {
+      weekData[i] = getTemplate(i);
+    } else {
+      // Sort on load so Sleep (00:15 → offset 1455 mins) always lands
+      // at the end of the day list, not incorrectly shown as "Up Next"
+      weekData[i].sort((a, b) => timeToMins(a.time) - timeToMins(b.time));
+    }
+  }
+}
+
+function saveSchedule() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(weekData));
+    showToast('Saved ✓');
+  } catch(e) {
+    showToast('Save failed — storage unavailable');
+  }
+}
+
+// Fix 6: Export — append anchor to DOM before click (required by Firefox), revoke after delay
+function exportSchedule() {
+  try {
+    const json = JSON.stringify(weekData, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'weekly-schedule-backup.json';
+    document.body.appendChild(a); // Fix 6: must be in DOM for Firefox
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000); // Fix 6: delay revoke so download can start
+    showToast('Schedule exported ✓');
+  } catch(e) {
+    showToast('Export failed');
+  }
+}
+
+// Fix 8: Validate individual block objects on import
+function validateBlock(b) {
+  if (!b || typeof b !== 'object') return false;
+  if (typeof b.time !== 'string' || !/^\d{1,2}:\d{2}$/.test(b.time)) return false;
+  const [hStr, mStr] = b.time.split(':');
+  const h = parseInt(hStr, 10), m = parseInt(mStr, 10);
+  if (h < 0 || h > 23 || m < 0 || m > 59) return false;
+  if (typeof b.title !== 'string') return false;
+  if (b.type !== undefined && typeof b.type !== 'string') return false;
+  if (b.color !== undefined && (typeof b.color !== 'string' || !/^#[0-9a-f]{6}$/i.test(b.color))) return false;
+  return true;
+}
+
+function importSchedule(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        showToast('Invalid file format'); return;
+      }
+      for (let i = 0; i < 7; i++) {
+        if (parsed[i] === undefined) continue;
+        if (!Array.isArray(parsed[i])) { showToast('Invalid schedule data — day ' + i + ' is not an array'); return; }
+        for (const b of parsed[i]) {
+          if (!validateBlock(b)) { showToast('Invalid block data in day ' + i + ' — import aborted'); return; }
+        }
+      }
+      // Store for confirm overlay instead of browser confirm()
+      pendingImportData = parsed;
+      document.getElementById('importOverlay').classList.add('open');
+    } catch(err) {
+      showToast('Import failed — invalid JSON');
+    }
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// ─────────────────────────────────────────────────────
+// CLOCK
+// ─────────────────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  let h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
+  const ap = h < 12 ? 'AM' : 'PM';
+  const hr = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  document.getElementById('clockTime').textContent =
+    `${String(hr).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')} ${ap}`;
+  document.getElementById('clockDate').textContent =
+    now.toLocaleDateString('en-US', { weekday:'long', month:'short', day:'numeric' });
+}
+
+// ─────────────────────────────────────────────────────
+// NOW BANNER
+// ─────────────────────────────────────────────────────
+// Note: times before 06:00 are treated as "next day" (+1440 min offset)
+// so overnight blocks (e.g. 00:15 sleep) sort after late-night blocks.
+// Intentional for this schedule's structure. Early-morning blocks (before 6am)
+// will always appear at the end of the day list by design.
+function timeToMins(t) {
+  if (!t) return 0;
+  const parts = t.split(':').map(Number);
+  const h = parts[0], m = parts[1];
+  if (isNaN(h) || isNaN(m)) return 0; // Fix 4: guard against NaN from bad input
+  return h < 6 ? h * 60 + m + 1440 : h * 60 + m;
+}
+
+function parseDurMins(str) {
+  if (!str) return 0;
+  if (/^→/.test(str)) return 0; // explicit continuation marker — no duration
+  const s = str.replace(/^~/, '').trim(); // strip approximate prefix before parsing
+  let mins = 0;
+  const hm = s.match(/(\d+)h/); if (hm) mins += parseInt(hm[1]) * 60;
+  const mm = s.match(/(\d+)m/); if (mm) mins += parseInt(mm[1]);
+  return mins;
+}
+
+function fmt12(t) {
+  if (!t) return '';
+  const parts = t.split(':').map(Number);
+  const h = parts[0], m = parts[1];
+  if (isNaN(h) || isNaN(m)) return t; // Fix 4: return raw string rather than "NaN:NaN AM"
+  const ap = h < 12 ? 'AM' : 'PM';
+  const hr = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${hr}:${String(m).padStart(2,'0')} ${ap}`;
+}
+
+function updateNowBanner() {
+  const today = todayIdx();
+  const banner = document.getElementById('nowBanner');
+
+  if (currentDay !== today) {
+    banner.style.display = 'none';
+    return;
+  }
+
+  banner.style.display = 'block';
+  const blocks = (weekData[currentDay] || []).slice().sort((a, b) => timeToMins(a.time) - timeToMins(b.time));
+  const now = new Date();
+  const rawH = now.getHours(), rawM = now.getMinutes();
+  const nm = rawH < 6 ? rawH * 60 + rawM + 1440 : rawH * 60 + rawM;
+
+  let active = null, next = null;
+  for (const b of blocks) {
+    if (b.prep) continue;
+    const start = timeToMins(b.time);
+    const dur = parseDurMins(b.duration);
+    if (dur > 0) {
+      const end = start + dur;
+      const isCurr = nm >= start && nm < end;
+      if (isCurr && !active) { active = b; continue; }
+    }
+    if (!next) {
+      const activeEnd = active ? timeToMins(active.time) + parseDurMins(active.duration) : nm;
+      if (start >= activeEnd && start > nm) { next = b; }
+    }
+  }
+
+  const nowTitleEl  = document.getElementById('nowTitle');
+  const nowSubEl    = document.getElementById('nowSub');
+  const nextTitleEl = document.getElementById('nextTitle');
+  const nextSubEl   = document.getElementById('nextSub');
+  const nowPanel    = document.querySelector('.now-panel:first-child');
+  const nextPanel   = document.querySelector('.now-panel:last-child');
+
+  if (active) {
+    nowTitleEl.innerHTML = `<span class="glow-dot"></span>${escHtml(active.title)}`;
+    nowTitleEl.style.color = 'var(--trade)';
+    nowSubEl.textContent = `${fmt12(active.time)} · ${active.duration || ''}`;
+    nowPanel.classList.add('is-linked');
+    nowPanel.onclick = () => scrollToBlock(active.time);
+  } else {
+    nowTitleEl.innerHTML = 'No scheduled block right now';
+    nowTitleEl.style.color = 'var(--dim)';
+    nowSubEl.textContent = '';
+    nowPanel.classList.remove('is-linked');
+    nowPanel.onclick = null;
+  }
+
+  if (next) {
+    nextTitleEl.textContent = next.title;
+    nextTitleEl.style.color = 'var(--muted)';
+    nextSubEl.textContent = `Starts at ${fmt12(next.time)} · ${next.duration || ''}`;
+    nextPanel.classList.add('is-linked');
+    nextPanel.onclick = () => scrollToBlock(next.time);
+  } else {
+    nextTitleEl.textContent = 'No more blocks today';
+    nextTitleEl.style.color = 'var(--dim)';
+    nextSubEl.textContent = '';
+    nextPanel.classList.remove('is-linked');
+    nextPanel.onclick = null;
+  }
+}
+
+function scrollToBlock(time) {
+  const row = document.querySelector(`.block-row[data-time="${CSS.escape(time)}"]`);
+  if (!row) return;
+  // Scroll the block row into view, centred
+  row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  // Flash the block content inside it
+  const content = row.querySelector('.block-content');
+  if (!content) return;
+  content.classList.remove('block-flash');
+  // Force reflow so re-adding the class triggers the animation fresh
+  void content.offsetWidth;
+  content.classList.add('block-flash');
+  content.addEventListener('animationend', () => content.classList.remove('block-flash'), { once: true });
+}
+
+// ─────────────────────────────────────────────────────
+// RENDER
+// ─────────────────────────────────────────────────────
+function renderTabs() {
+  const today = todayIdx();
+  const container = document.getElementById('dayTabs');
+  container.innerHTML = '';
+  DAYS.forEach((day, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'day-tab'
+      + (WEEKEND_IDS.includes(i) ? ' weekend' : '')
+      + (i === currentDay ? ' active' : '');
+    btn.innerHTML = day.slice(0,3) + (i === today ? '<span class="today-dot"></span>' : '');
+    btn.onclick = () => switchDay(i);
+    container.appendChild(btn);
+  });
+}
+
+// Fix 7: whitelist of valid CSS type classes
+const VALID_TYPES = new Set(['t-sleep','t-trade','t-meal','t-move','t-life','t-admin','t-study','t-free']);
+function safeType(t) { return VALID_TYPES.has(t) ? t : 't-free'; }
+
+function renderSchedule() {
+  const blocks = (weekData[currentDay] || []).slice().sort((a, b) => timeToMins(a.time) - timeToMins(b.time));
+  const body = document.getElementById('scheduleBody');
+  body.innerHTML = '';
+
+  document.getElementById('toolbarDay').textContent = DAYS[currentDay];
+  document.getElementById('toolbarType').textContent = '· ' + (WEEKEND_IDS.includes(currentDay) ? 'Weekend' : 'Weekday');
+
+  const today = todayIdx();
+  const _now = new Date();
+  const rawH = _now.getHours(), rawM = _now.getMinutes();
+  const nm = rawH < 6 ? rawH * 60 + rawM + 1440 : rawH * 60 + rawM;
+
+  // Only pulse the single next upcoming prep bar — not every one
+  const nextPrepIdx = (currentDay === today)
+    ? blocks.findIndex(b => b.prep && timeToMins(b.time) > nm)
+    : -1;
+
+  blocks.forEach((block, idx) => {
+    // Prep row
+    if (block.prep) {
+      const isNextPrep = idx === nextPrepIdx;
+      const row = document.createElement('div');
+      row.className = 'prep-row';
+      row.innerHTML = `
+        <div class="prep-spacer"><span class="prep-time">${escHtml(fmt12(block.time))}</span></div>
+        <div class="prep-bar" onclick="openModal(${idx})">
+          <span class="prep-pulse" style="${isNextPrep ? '' : 'animation:none;opacity:0.4'}">◉</span>
+          ${escHtml(block.sub || 'Prepare for candle close — be at charts')}
+        </div>`;
+      body.appendChild(row);
+      return;
+    }
+
+    // Hour separator: show when current block's hour differs from previous non-prep block's hour
+    if (idx > 0) {
+      const prevBlock = blocks.slice(0, idx).reverse().find(b => !b.prep);
+      if (prevBlock && block.time && block.time.endsWith(':00')) {
+        const prevHour = prevBlock.time ? prevBlock.time.split(':')[0] : null;
+        const curHour  = block.time.split(':')[0];
+        if (prevHour !== curHour) {
+          const sep = document.createElement('div');
+          sep.className = 'hour-sep';
+          body.appendChild(sep);
+        }
+      }
+    }
+
+    // Fix 1: Is this the active block? Use adjusted mins
+    let isCurr = false;
+    if (currentDay === today) {
+      const start = timeToMins(block.time);
+      const dur = parseDurMins(block.duration);
+      if (dur > 0) {
+        isCurr = nm >= start && nm < start + dur;
+      }
+    }
+
+    const row = document.createElement('div');
+    row.className = 'block-row';
+    row.dataset.time = block.time;
+    if (isCurr) row.classList.add('is-current-block');
+    const typeClass = safeType(block.type);
+    // Per-block colour: border-left uses the colour, background gets a very faint tint
+    let colorStyle = '';
+    if (block.color) {
+      const { r, g, b } = hexToRgb(block.color);
+      colorStyle = `style="border-left-color:${block.color};background:rgba(${r},${g},${b},0.07)"`;
+    }
+    row.innerHTML = `
+      <div class="time-col"><span class="time-label">${escHtml(fmt12(block.time))}</span></div>
+      <div class="block-content ${typeClass} ${isCurr ? 'current-block' : ''}" ${colorStyle} onclick="openModal(${idx})">
+        ${isCurr ? '<span class="now-tag">◉ Now</span>' : ''}
+        <span class="block-title">${escHtml(block.title)}</span>
+        ${block.sub ? `<div class="block-sub">${escHtml(block.sub)}</div>` : ''}
+        <span class="block-duration">${escHtml(block.duration || '')}</span>
+        <button class="block-edit-btn" onclick="event.stopPropagation();openModal(${idx})">✎</button>
+      </div>`;
+    body.appendChild(row);
+  });
+
+  updateNowBanner();
+}
+
+// Fix 1: Lightweight per-second "Now" badge sync — triggers full re-render only when
+// the active block changes. Prep blocks render as .prep-row (not .block-row), so we
+// track domRowIdx separately so data index and DOM index stay correctly aligned.
+function syncNowBadge() {
+  const today = todayIdx();
+  if (currentDay !== today) return;
+  const blocks = (weekData[currentDay] || []).slice().sort((a, b) => timeToMins(a.time) - timeToMins(b.time));
+  const rawH = new Date().getHours(), rawM = new Date().getMinutes();
+  const nm = rawH < 6 ? rawH * 60 + rawM + 1440 : rawH * 60 + rawM;
+  const domRows = document.querySelectorAll('.block-row');
+
+  let needsFullRender = false;
+  let domRowIdx = 0;
+  for (let i = 0; i < blocks.length; i++) {
+    const block = blocks[i];
+    if (block.prep) continue; // prep = .prep-row, not .block-row — skip without incrementing
+    const row = domRows[domRowIdx++];
+    if (!row) continue;
+    const start = timeToMins(block.time);
+    const dur = parseDurMins(block.duration);
+    const shouldBeActive = dur > 0 && nm >= start && nm < start + dur;
+    const wasActive = row.classList.contains('is-current-block');
+    if (shouldBeActive !== wasActive) { needsFullRender = true; break; }
+  }
+  if (needsFullRender) renderSchedule();
+}
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+
+// ─────────────────────────────────────────────────────
+// NAVIGATION
+// ─────────────────────────────────────────────────────
+function switchDay(idx) {
+  currentDay = idx;
+  renderTabs();
+  renderSchedule();
+  syncUndoButton();
+}
+
+// ─────────────────────────────────────────────────────
+// MODAL HELPERS
+// ─────────────────────────────────────────────────────
+function showModalError(msg) {
+  const el = document.getElementById('modalError');
+  el.textContent = msg;
+  el.classList.add('show');
+}
+function clearModalError() {
+  document.getElementById('modalError').classList.remove('show');
+  document.getElementById('overlapWarning').classList.remove('show');
+}
+
+function armDelete() {
+  // Show inline delete confirm banner, hide normal footer actions
+  document.getElementById('deleteConfirmBanner').classList.add('show');
+  document.getElementById('footerActions').style.display = 'none';
+}
+function cancelDeleteArm() {
+  document.getElementById('deleteConfirmBanner').classList.remove('show');
+  document.getElementById('footerActions').style.display = '';
+}
+
+let pendingOverlapBlock = null;
+function showOverlapWarning(conflicts, block) {
+  pendingOverlapBlock = block;
+  const msg = document.getElementById('overlapMsg');
+  const list = document.getElementById('overlapList');
+  msg.textContent = `Overlaps with ${conflicts.length} existing block${conflicts.length > 1 ? 's' : ''}:`;
+  list.textContent = conflicts.map(b => `${b.time} — ${b.title} (${b.duration})`).join(' · ');
+  document.getElementById('overlapWarning').classList.add('show');
+  // Fix F: hide footer action buttons — overlap buttons are now in the same footer zone
+  document.getElementById('footerActions').style.display = 'none';
+}
+function dismissOverlap() {
+  document.getElementById('overlapWarning').classList.remove('show');
+  document.getElementById('footerActions').style.display = '';
+  pendingOverlapBlock = null;
+}
+function saveBlockForce() {
+  if (!pendingOverlapBlock) return;
+  commitBlock(pendingOverlapBlock);
+  dismissOverlap();
+}
+
+function showImportConfirm() {
+  document.getElementById('importPreConfirm').classList.add('open');
+}
+function closeImportPreConfirm() {
+  document.getElementById('importPreConfirm').classList.remove('open');
+}
+function proceedToFilePicker() {
+  closeImportPreConfirm();
+  document.getElementById('importFile').click();
+}
+
+document.getElementById('importPreConfirm').addEventListener('click', function(e) {
+  if (e.target === this) closeImportPreConfirm();
+});
+
+let pendingImportData = null;
+function closeImportConfirm() {
+  document.getElementById('importOverlay').classList.remove('open');
+  pendingImportData = null;
+}
+function confirmImport() {
+  if (!pendingImportData) return;
+  weekData = pendingImportData;
+  for (let i = 0; i < 7; i++) {
+    if (!weekData[i]) weekData[i] = getTemplate(i);
+  }
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(weekData));
+  } catch(e) {
+    showToast('Imported (storage unavailable)');
+    renderTabs(); renderSchedule();
+    closeImportConfirm(); return;
+  }
+  renderTabs();
+  renderSchedule();
+  showToast('Schedule imported ✓');
+  closeImportConfirm();
+}
+
+document.getElementById('importOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeImportConfirm();
+});
+
+// ─────────────────────────────────────────────────────
+// COLOUR PICKER
+// ─────────────────────────────────────────────────────
+let _selectedColor = null;
+
+function selectSwatch(color) {
+  _selectedColor = color || null;
+  // Update swatch selection states
+  document.getElementById('swatchNone').classList.toggle('selected', !color);
+  document.querySelectorAll('.color-swatch').forEach(s => {
+    s.classList.toggle('selected', s.dataset.color === color);
+  });
+  // Sync the custom colour input value if a preset was clicked
+  if (color && /^#[0-9a-f]{6}$/i.test(color)) {
+    document.getElementById('colorCustom').value = color;
+  }
+}
+
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1,3), 16);
+  const g = parseInt(hex.slice(3,5), 16);
+  const b = parseInt(hex.slice(5,7), 16);
+  return { r, g, b };
+}
+
+// ─────────────────────────────────────────────────────
+// MODAL
+// ─────────────────────────────────────────────────────
+function openModal(idx) {
+  editingIndex = idx;
+  const isNew = idx === null;
+  document.getElementById('modalTitle').textContent = isNew ? 'Add Block' : 'Edit Block';
+  document.getElementById('deleteBtn').style.display = isNew ? 'none' : '';
+  document.getElementById('deleteConfirmBanner').classList.remove('show');
+  document.getElementById('footerActions').style.display = '';
+
+  if (isNew) {
+    document.getElementById('fTime').value = '08:00';
+    document.getElementById('fDuration').value = '';
+    document.getElementById('fTitle').value = '';
+    document.getElementById('fSub').value = '';
+    document.getElementById('fType').value = 't-free';
+    document.getElementById('fIsPrep').checked = false;
+    selectSwatch(null);
+  } else {
+    const b = weekData[currentDay][idx];
+    document.getElementById('fTime').value = b.time || '';
+    document.getElementById('fDuration').value = b.duration || '';
+    document.getElementById('fTitle').value = b.title || '';
+    document.getElementById('fSub').value = b.sub || '';
+    document.getElementById('fType').value = safeType(b.type);
+    document.getElementById('fIsPrep').checked = !!b.prep;
+    selectSwatch(b.color || null);
+  }
+
+  clearModalError();
+  document.getElementById('saveBtn').style.display = '';
+  pendingOverlapBlock = null;
+
+  document.getElementById('modalOverlay').classList.add('open');
+  // Fix A: new blocks → focus Start Time (first field); editing → focus Title
+  setTimeout(() => {
+    if (idx === null) {
+      document.getElementById('fTime').focus();
+    } else {
+      document.getElementById('fTitle').focus();
+    }
+  }, 80);
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  document.getElementById('fType').disabled = false;
+  document.getElementById('deleteConfirmBanner').classList.remove('show');
+  document.getElementById('footerActions').style.display = '';
+  document.getElementById('saveBtn').style.display = '';
+  document.getElementById('overlapWarning').classList.remove('show');
+  pendingOverlapBlock = null;
+  clearModalError();
+  selectSwatch(null);
+  editingIndex = null;
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('modalOverlay')) closeModal();
+}
+
+function saveBlock() {
+  clearModalError();
+  const time     = document.getElementById('fTime').value;
+  const duration = document.getElementById('fDuration').value.trim();
+  const title    = document.getElementById('fTitle').value.trim();
+  const sub      = document.getElementById('fSub').value.trim();
+  const type     = document.getElementById('fType').value;
+  const isPrep   = document.getElementById('fIsPrep').checked;
+
+  if (!time) { showModalError('Please enter a start time.'); return; }
+  if (!title && !isPrep) { showModalError('Please enter a title.'); return; }
+
+  if (duration) {
+    const isArrow    = /^→/.test(duration);
+    const isApprox   = /^~/.test(duration);
+    const baseStr    = isApprox ? duration.slice(1).trim() : duration.trim();
+    const isValidDur = /^(\d+h\s*)?(\d+m)?$/.test(baseStr) && baseStr !== '';
+    if (!isArrow && !isValidDur) {
+      showModalError('Invalid duration. Use: 45m · 1h · 1h 30m · or prefix ~ for approximate (e.g. ~1h 30m).');
+      return;
+    }
+  }
+
+  const block = { time, title, sub, type: safeType(type), duration, prep: isPrep, color: _selectedColor || undefined };
+
+  // Overlap check
+  if (!isPrep && parseDurMins(duration) > 0) {
+    const blocks  = weekData[currentDay];
+    const newStart = timeToMins(time);
+    const newEnd   = newStart + parseDurMins(duration);
+    const conflicts = [];
+    for (let i = 0; i < blocks.length; i++) {
+      if (i === editingIndex) continue;
+      const b = blocks[i];
+      if (b.prep || !b.duration || parseDurMins(b.duration) === 0) continue;
+      const bStart = timeToMins(b.time);
+      const bEnd   = bStart + parseDurMins(b.duration);
+      if (newStart < bEnd && newEnd > bStart) conflicts.push(b);
+    }
+    if (conflicts.length > 0) {
+      showOverlapWarning(conflicts, block);
+      return;
+    }
+  }
+
+  commitBlock(block);
+}
+
+function commitBlock(block) {
+  const isNew = editingIndex === null;
+  const blocks = weekData[currentDay];
+  // Save undo snapshot before mutating
+  undoStack[currentDay] = clone(blocks);
+  if (isNew) {
+    blocks.push(block);
+  } else {
+    blocks[editingIndex] = block;
+  }
+  blocks.sort((a, b) => timeToMins(a.time) - timeToMins(b.time));
+  weekData[currentDay] = blocks;
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(weekData)); } catch(e) {}
+  closeModal();
+  renderSchedule();
+  syncUndoButton();
+  showToast(isNew ? 'Block added ✓' : 'Block saved ✓');
+}
+
+function deleteBlock() {
+  if (editingIndex === null) return;
+  undoStack[currentDay] = clone(weekData[currentDay]);
+  weekData[currentDay].splice(editingIndex, 1);
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(weekData)); } catch(e) {}
+  closeModal();
+  renderSchedule();
+  syncUndoButton();
+  showToast('Block deleted', true);
+}
+
+function undoLastAction() {
+  if (!undoStack[currentDay]) { showToast('Nothing to undo'); return; }
+  weekData[currentDay] = undoStack[currentDay];
+  delete undoStack[currentDay];
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(weekData)); } catch(e) {}
+  renderSchedule();
+  syncUndoButton();
+  // Hide toast undo button since we've just used it
+  document.getElementById('toast').classList.remove('show');
+  showToast('Undo ✓');
+}
+
+function syncUndoButton() {
+  const btn = document.getElementById('undoBtn');
+  if (!btn) return;
+  const hasUndo = !!undoStack[currentDay];
+  btn.disabled = !hasUndo;
+  btn.classList.toggle('has-undo', hasUndo);
+}
+
+// ─────────────────────────────────────────────────────
+// RESET
+// ─────────────────────────────────────────────────────
+function showResetConfirm() {
+  document.getElementById('resetDayName').textContent = DAYS[currentDay];
+  document.getElementById('resetOverlay').classList.add('open');
+}
+function closeResetConfirm() {
+  document.getElementById('resetOverlay').classList.remove('open');
+}
+function confirmReset() {
+  undoStack[currentDay] = clone(weekData[currentDay]);
+  weekData[currentDay] = getTemplate(currentDay);
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(weekData)); } catch(e) {}
+  closeResetConfirm();
+  renderSchedule();
+  syncUndoButton();
+  showToast('Day reset to default', true);
+}
+
+// Close reset overlay on outside click
+document.getElementById('resetOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeResetConfirm();
+});
+
+// ─────────────────────────────────────────────────────
+// TOAST
+// ─────────────────────────────────────────────────────
+function showToast(msg, withUndo = false) {
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  const undoBtn = document.getElementById('toastUndoBtn');
+  undoBtn.style.display = withUndo ? '' : 'none';
+  t.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), withUndo ? 5000 : 2500);
+}
+
+// ─────────────────────────────────────────────────────
+// KEYBOARD
+// ─────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    if (document.getElementById('modalOverlay').classList.contains('open')) { closeModal(); }
+    else if (document.getElementById('resetOverlay').classList.contains('open')) { closeResetConfirm(); }
+    else if (document.getElementById('importOverlay').classList.contains('open')) { closeImportConfirm(); }
+    else if (document.getElementById('importPreConfirm').classList.contains('open')) { closeImportPreConfirm(); }
+  }
+});
+
+// ─────────────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────
+// THEMES
+// ─────────────────────────────────────────────────────
+const THEMES = ['espresso', 'terminal', 'slate', 'parchment'];
+const THEME_KEY = 'izy-theme-v1';
+
+function applyTheme(name) {
+  const theme = THEMES.includes(name) ? name : 'espresso';
+  // espresso is :root defaults — no data-theme attr needed
+  if (theme === 'espresso') {
+    document.documentElement.removeAttribute('data-theme');
+  } else {
+    document.documentElement.setAttribute('data-theme', theme);
+  }
+  // Update swatch active state
+  document.querySelectorAll('.theme-swatch').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.theme === theme);
+  });
+  // Persist
+  try { localStorage.setItem(THEME_KEY, theme); } catch(e) {}
+}
+
+function loadTheme() {
+  let saved = 'espresso';
+  try { saved = localStorage.getItem(THEME_KEY) || 'espresso'; } catch(e) {}
+  applyTheme(saved);
+}
+
+// Wire up swatch buttons
+document.querySelectorAll('.theme-swatch').forEach(btn => {
+  btn.addEventListener('click', () => applyTheme(btn.dataset.theme));
+});
+
+// ─────────────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────────────
+loadTheme();
+loadFromStorage();
+renderTabs();
+renderSchedule();
+syncUndoButton();
+updateClock();
+
+let _lastRenderedDay = todayIdx();
+
+// Store interval refs for potential cleanup
+clockInterval = setInterval(() => {
+  updateClock();
+  updateNowBanner();
+  syncNowBadge();
+  // Fix 18: detect day rollover and force re-render to clear stale "Now" tags
+  const currentTodayIdx = todayIdx();
+  if (currentTodayIdx !== _lastRenderedDay) {
+    _lastRenderedDay = currentTodayIdx;
+    renderTabs();
+    renderSchedule();
+  }
+}, 1000);
+
+// Full re-render every 5 minutes as safety net
+const renderInterval = setInterval(() => renderSchedule(), 300000);
+
+// Cleanup intervals when page is closed/navigated away
+window.addEventListener('beforeunload', () => {
+  clearInterval(clockInterval);
+  clearInterval(renderInterval);
+  cancelAllNotifications();
+});
+
+// ─────────────────────────────────────────────────────
+// NOTIFICATIONS
+// ─────────────────────────────────────────────────────
+const NOTIF_KEY = 'izy-notifications-enabled';
+let _notifTimers = [];
+
+function notificationsEnabled() {
+  try { return localStorage.getItem(NOTIF_KEY) === 'true'; } catch(e) { return false; }
+}
+
+function setNotificationsEnabled(val) {
+  try { localStorage.setItem(NOTIF_KEY, val ? 'true' : 'false'); } catch(e) {}
+}
+
+function cancelAllNotifications() {
+  _notifTimers.forEach(id => clearTimeout(id));
+  _notifTimers = [];
+}
+
+// Schedule browser notifications for all upcoming blocks today
+function scheduleNotifications() {
+  cancelAllNotifications();
+  if (!notificationsEnabled()) return;
+  if (Notification.permission !== 'granted') return;
+
+  const today = todayIdx();
+  const blocks = weekData[today] || [];
+  const now = new Date();
+  const nowMs = now.getTime();
+
+  blocks.forEach(block => {
+    const [h, m] = block.time.split(':').map(Number);
+    const blockDate = new Date();
+    blockDate.setHours(h, m, 0, 0);
+    // If block time is before 6am treat as next day
+    if (h < 6) blockDate.setDate(blockDate.getDate() + 1);
+
+    const msUntil = blockDate.getTime() - nowMs;
+    if (msUntil <= 0) return; // already passed
+
+    // Notify exactly at block start
+    const id = setTimeout(() => {
+      const icon = 'icons/icon-192.png';
+      if (block.prep) {
+        showNotification(
+          '◈ Candle Close Approaching',
+          block.sub || 'Prepare for candle close',
+          icon
+        );
+      } else {
+        showNotification(
+          `▶ ${block.title}`,
+          block.sub ? block.sub.slice(0, 80) : `Starting now · ${block.duration || ''}`,
+          icon
+        );
+      }
+      // Re-schedule for next day after midnight blocks fire
+    }, msUntil);
+
+    _notifTimers.push(id);
+
+    // Also send a 2-minute warning for non-prep trade blocks
+    if (!block.prep && block.type === 't-trade' && msUntil > 2 * 60 * 1000) {
+      const warnId = setTimeout(() => {
+        showNotification(
+          `⚡ Trade Check in 2 mins`,
+          `${block.title} starts at ${fmt12(block.time)}`,
+          'icons/icon-192.png'
+        );
+      }, msUntil - 2 * 60 * 1000);
+      _notifTimers.push(warnId);
+    }
+  });
+
+  console.log(`[IZY] Scheduled ${_notifTimers.length} notifications for today`);
+}
+
+function showNotification(title, body, icon) {
+  if (Notification.permission !== 'granted') return;
+  // Use service worker notification if available (works when app is in background)
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.ready.then(reg => {
+      reg.showNotification(title, {
+        body,
+        icon,
+        badge: icon,
+        vibrate: [200, 100, 200],
+        tag: 'izy-block',
+        renotify: true,
+      });
+    });
+  } else {
+    // Fallback to direct notification (app must be open/focused)
+    new Notification(title, { body, icon });
+  }
+}
+
+async function requestNotificationPermission() {
+  if (!('Notification' in window)) {
+    showToast('Notifications not supported in this browser');
+    return;
+  }
+
+  if (Notification.permission === 'granted') {
+    setNotificationsEnabled(true);
+    scheduleNotifications();
+    syncNotifButton();
+    showToast('Notifications enabled ✓');
+    return;
+  }
+
+  if (Notification.permission === 'denied') {
+    showToast('Notifications blocked — enable in browser settings');
+    return;
+  }
+
+  const result = await Notification.requestPermission();
+  if (result === 'granted') {
+    setNotificationsEnabled(true);
+    scheduleNotifications();
+    syncNotifButton();
+    showToast('Notifications enabled ✓');
+  } else {
+    showToast('Notification permission denied');
+  }
+}
+
+function toggleNotifications() {
+  if (notificationsEnabled()) {
+    setNotificationsEnabled(false);
+    cancelAllNotifications();
+    syncNotifButton();
+    showToast('Notifications disabled');
+  } else {
+    requestNotificationPermission();
+  }
+}
+
+function syncNotifButton() {
+  const btn = document.getElementById('notifBtn');
+  if (!btn) return;
+  const on = notificationsEnabled() && Notification.permission === 'granted';
+  btn.textContent = on ? '🔔 Notifs On' : '🔕 Notifs Off';
+  btn.classList.toggle('btn-primary', on);
+}
+
+// Re-schedule every hour as a safety net (handles midnight rollover)
+setInterval(() => scheduleNotifications(), 60 * 60 * 1000);
+
+// ─── PWA: Register Service Worker ───
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js')
+      .then(reg => {
+        console.log('[IZY] SW registered:', reg.scope);
+        // Init notifications after SW is ready
+        if (notificationsEnabled() && Notification.permission === 'granted') {
+          scheduleNotifications();
+        }
+      })
+      .catch(err => console.warn('[IZY] SW registration failed:', err));
+  });
+}
+
+// Init notif button state on load
+window.addEventListener('DOMContentLoaded', () => syncNotifButton());
+</script>
+</body>
+</html>
