@@ -2,7 +2,8 @@
   "name": "IZY Weekly Schedule",
   "short_name": "IZY",
   "description": "IZY trading-focused weekly schedule planner",
-  "start_url": "./index.html",
+  "start_url": "/Izy-Schedule-v2/index.html",
+  "scope": "/Izy-Schedule-v2/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#090704",
@@ -10,25 +11,36 @@
   "categories": ["productivity", "utilities"],
   "icons": [
     {
-      "src": "icons/icon-192.png",
+      "src": "/Izy-Schedule-v2/icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "icons/icon-512.png",
+      "src": "/Izy-Schedule-v2/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/Izy-Schedule-v2/icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/Izy-Schedule-v2/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
-  "screenshots": [],
   "shortcuts": [
     {
       "name": "Today's Schedule",
       "short_name": "Today",
       "description": "Jump to today's schedule",
-      "url": "./index.html"
+      "url": "/Izy-Schedule-v2/index.html"
     }
   ]
 }
