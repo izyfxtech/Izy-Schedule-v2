@@ -914,6 +914,16 @@ const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sun
 const WEEKEND_IDS = [5, 6];
 const STORAGE_KEY = 'izy-weekly-schedule-v2';
 
+// ─── App versioning ───────────────────────────────────
+// Bump APP_VERSION in code whenever a GitHub push contains changes that could
+// make saved user data structurally incompatible with new features.
+// On load:
+//   • Same version  → load normally, no action
+//   • New version, valid data  → keep user's schedule, update stored version
+//   • New version, invalid data → reset all days to default templates
+const APP_VERSION = 1;
+const VERSION_KEY = 'izy-app-version';
+
 const WEEKDAY_TEMPLATE = [
   { time:'06:00', title:'Morning Routine', sub:"Hygiene, dress, journaling, intentions + yesterday's trade review. No rushing.", type:'t-admin', duration:'55m', prep:false },
   { time:'06:55', title:'PREP', sub:'Prepare for 07:00 candle close', type:'prep', duration:'', prep:true },
@@ -1004,12 +1014,27 @@ function getTemplate(i) {
 // ─────────────────────────────────────────────────────
 // STORAGE
 // ─────────────────────────────────────────────────────
+
+// Returns true if every block in weekData passes validateBlock
+function weekDataIsValid() {
+  for (let i = 0; i < 7; i++) {
+    const day = weekData[i];
+    if (!Array.isArray(day)) return false;
+    for (const b of day) {
+      if (!validateBlock(b)) return false;
+    }
+  }
+  return true;
+}
+
 function loadFromStorage() {
+  let storedVersion = null;
+  try { storedVersion = localStorage.getItem(VERSION_KEY); } catch(e) {}
+
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       const parsed = JSON.parse(saved);
-      // Validate it's a plain object (not array/string/null)
       if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
         weekData = parsed;
       } else {
@@ -1017,14 +1042,43 @@ function loadFromStorage() {
       }
     }
   } catch(e) { weekData = {}; }
+
+  // Fill any missing days with templates regardless of version path
   for (let i = 0; i < 7; i++) {
     if (!weekData[i] || !Array.isArray(weekData[i])) {
       weekData[i] = getTemplate(i);
     }
-    // Sort always — covers both fresh templates and loaded data so Sleep
-    // (00:15 → offset 1455 mins) always lands at the end of the day list.
+  }
+
+  const currentVersionStr = String(APP_VERSION);
+  let postInitToast = null;
+
+  if (storedVersion === null) {
+    // First visit or pre-versioning data — accept as-is and stamp the version
+    try { localStorage.setItem(VERSION_KEY, currentVersionStr); } catch(e) {}
+  } else if (storedVersion !== currentVersionStr) {
+    // App has been updated — validate the user's saved data
+    if (weekDataIsValid()) {
+      // Data is structurally compatible — keep it, update version
+      try { localStorage.setItem(VERSION_KEY, currentVersionStr); } catch(e) {}
+      postInitToast = 'App updated — your schedule has been kept ✓';
+    } else {
+      // Data is incompatible — reset all days to default templates
+      for (let i = 0; i < 7; i++) weekData[i] = getTemplate(i);
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(weekData));
+        localStorage.setItem(VERSION_KEY, currentVersionStr);
+      } catch(e) {}
+      postInitToast = 'App updated — schedule reset to defaults';
+    }
+  }
+
+  // Sort every day — covers both fresh templates and loaded data
+  for (let i = 0; i < 7; i++) {
     weekData[i].sort((a, b) => sortKey(a) - sortKey(b));
   }
+
+  return postInitToast;
 }
 
 function saveSchedule() {
@@ -1821,11 +1875,12 @@ document.querySelectorAll('.theme-swatch').forEach(btn => {
 // INIT
 // ─────────────────────────────────────────────────────
 loadTheme();
-loadFromStorage();
+const _postInitToast = loadFromStorage();
 renderTabs();
 renderSchedule();
 syncUndoButton();
 updateClock();
+if (_postInitToast) showToast(_postInitToast);
 
 let _lastRenderedDay = todayIdx();
 
