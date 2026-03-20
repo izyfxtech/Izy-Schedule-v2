@@ -949,7 +949,7 @@ const WEEKDAY_TEMPLATE = [
   { time:'22:55', title:'PREP', sub:'Prepare for 23:00 candle close', type:'prep', duration:'', prep:true },
   { time:'23:00', title:'◈ Trade Check #5 — 23:00 Candle (Final)', sub:'Final check, log results, write closing trade journal entry', type:'t-trade', duration:'15m', prep:false },
   { time:'23:15', title:'Wind Down', sub:'No screens, dim lights, reading or stretching — let the mind settle', type:'t-admin', duration:'1h', prep:false },
-  { time:'00:15', title:'Sleep', sub:'Core rest — ~5h 45m overnight', type:'t-sleep', duration:'~5h 45m', prep:false },
+  { time:'00:15', title:'Sleep', sub:'Core rest — ~7h 45m overnight', type:'t-sleep', duration:'~7h 45m', prep:false },
 ];
 
 const WEEKEND_TEMPLATE = [
@@ -977,7 +977,7 @@ const WEEKEND_TEMPLATE = [
   { time:'22:55', title:'PREP', sub:'Prepare for 23:00 candle close', type:'prep', duration:'', prep:true },
   { time:'23:00', title:'◈ Trade Check #5 — 23:00 Candle (Final)', sub:'Final check — log, journal, done for the weekend', type:'t-trade', duration:'15m', prep:false },
   { time:'23:15', title:'Wind Down + Sleep Prep', sub:'No screens, quiet time, earlier sleep target on Sunday', type:'t-admin', duration:'45m', prep:false },
-  { time:'00:00', title:'Sleep ↩', sub:'Back to weekday rhythm tomorrow', type:'t-sleep', duration:'→', prep:false },
+  { time:'00:00', title:'Sleep', sub:'Weekend rest — full night, carries into morning', type:'t-sleep', duration:'~8h', prep:false },
 ];
 
 // ─────────────────────────────────────────────────────
@@ -1184,26 +1184,21 @@ function sortKey(block) {
   return timeToMins(block.time);
 }
 
-// Raw clock minutes with no overnight offset — used only for bleed detection
-function rawMins(t) {
-  if (!t) return 0;
-  const [h, m] = t.split(':').map(Number);
-  if (isNaN(h) || isNaN(m)) return 0;
-  return h * 60 + m;
-}
-
-// Return all blocks from dayIdx that bleed past midnight into the next calendar day.
-// Each entry: { block, remainMins }
+// Return all blocks from the previous schedule-day that run past 06:00 (the day boundary).
+// Uses timeToMins so overnight blocks (h<6 → +1440) are handled correctly.
+// SCHEDULE_DAY_END = 06:00 in offset-mins = 360 + 1440 = 1800
 function getBleedIns(dayIdx) {
   const prevIdx = (dayIdx + 6) % 7;
+  const SCHEDULE_DAY_END = 1800;
   const result = [];
   for (const b of (weekData[prevIdx] || [])) {
     if (b.prep) continue;
-    const start = rawMins(b.time);
-    if (start === 0) continue; // midnight-start blocks live on current day already
     const dur = parseDurMins(b.duration);
-    if (dur > 0 && start + dur > 1440) {
-      result.push({ block: b, remainMins: (start + dur) - 1440, fromDay: prevIdx });
+    if (dur <= 0) continue;
+    const start = timeToMins(b.time);
+    const end = start + dur;
+    if (end > SCHEDULE_DAY_END) {
+      result.push({ block: b, remainMins: end - SCHEDULE_DAY_END, fromDay: prevIdx });
     }
   }
   return result;
