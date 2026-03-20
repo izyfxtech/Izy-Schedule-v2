@@ -956,7 +956,21 @@ const WEEKEND_TEMPLATE = [
 // ─────────────────────────────────────────────────────
 // STATE
 // ─────────────────────────────────────────────────────
-const todayIdx = () => { const d = new Date().getDay(); return d === 0 ? 6 : d - 1; };
+const todayIdx = () => {
+  const now = new Date();
+  // The schedule day runs 06:00 → 05:59 next calendar day.
+  // Before 6 AM we are still in yesterday's schedule (overnight Sleep block),
+  // so treat as the previous calendar day.
+  let d;
+  if (now.getHours() < 6) {
+    const prev = new Date(now);
+    prev.setDate(prev.getDate() - 1);
+    d = prev.getDay();
+  } else {
+    d = now.getDay();
+  }
+  return d === 0 ? 6 : d - 1;
+};
 let currentDay = todayIdx();
 let weekData = {};
 let editingIndex = null;
@@ -1733,9 +1747,11 @@ clockInterval = setInterval(() => {
   updateClock();
   updateNowBanner();
   syncNowBadge();
-  // Fix 18: detect day rollover and force re-render to clear stale "Now" tags
+  // Detect schedule-day rollover (fires at 06:00, not midnight)
   const currentTodayIdx = todayIdx();
   if (currentTodayIdx !== _lastRenderedDay) {
+    // If the user was viewing the old "today", advance them to the new day automatically
+    if (currentDay === _lastRenderedDay) currentDay = currentTodayIdx;
     _lastRenderedDay = currentTodayIdx;
     renderTabs();
     renderSchedule();
@@ -1780,17 +1796,16 @@ function scheduleNotifications() {
   const today = todayIdx();
   const blocks = weekData[today] || [];
   const now = new Date();
-  const nowMs = now.getTime();
+  const rawH = now.getHours(), rawM = now.getMinutes(), rawS = now.getSeconds();
+  // Use the same offset logic as timeToMins so overnight blocks compare correctly
+  const nowMins = rawH < 6 ? rawH * 60 + rawM + 1440 : rawH * 60 + rawM;
 
   blocks.forEach(block => {
-    const [h, m] = block.time.split(':').map(Number);
-    const blockDate = new Date();
-    blockDate.setHours(h, m, 0, 0);
-    // If block time is before 6am treat as next day
-    if (h < 6) blockDate.setDate(blockDate.getDate() + 1);
-
-    const msUntil = blockDate.getTime() - nowMs;
-    if (msUntil <= 0) return; // already passed
+    const blockMins = timeToMins(block.time);
+    // minsUntil measured from the start of the current minute
+    const minsUntilStart = blockMins - nowMins;
+    const msUntil = minsUntilStart * 60 * 1000 - rawS * 1000; // account for elapsed seconds
+    if (msUntil <= 0) return; // block has already started or passed
 
     // Notify exactly at block start
     const id = setTimeout(() => {
