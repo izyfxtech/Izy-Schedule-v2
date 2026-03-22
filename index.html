@@ -157,17 +157,10 @@
   --prep-bd: rgba(192,96,232,0.22);
 }
 
-/* ── Light brightness overrides for accent prep-bg opacity ──
-   Dark prep-bg values use high opacity which looks fine on dark.
-   On light/warm backgrounds we force a lower opacity tint instead. ── */
-[data-brightness="light"] [data-accent],
-[data-brightness="light"][data-accent] {
-  --prep-bg: var(--trade-bg);
-}
-[data-brightness="warm"] [data-accent],
-[data-brightness="warm"][data-accent] {
-  --prep-bg: var(--trade-bg);
-}
+/* ── Light/warm brightness overrides for accent prep-bg opacity ──
+   Both data-* attributes sit on <html>, so compound selector (no space) is correct. ── */
+[data-brightness="light"][data-accent] { --prep-bg: var(--trade-bg); }
+[data-brightness="warm"][data-accent]  { --prep-bg: var(--trade-bg); }
 html, body, .header-wrap, .header, .now-panel, .day-tab, .schedule-outer, .schedule-wrapper, .footer-wrap,
 .toolbar, .btn, .block-content, .prep-bar, .modal,
 .reset-box, .toast, .footer, .form-group input,
@@ -392,8 +385,8 @@ body {
 .btn-primary:hover { background: var(--trade-border); }
 .btn-add { background: var(--trade-bg); color: var(--trade); border-color: var(--trade-border); font-weight: 600; }
 .btn-add:hover { background: var(--trade-border); color: var(--trade); }
-.btn-danger { color: var(--danger); border-color: rgba(217,95,75,0.35); }
-.btn-danger:hover { background: rgba(217,95,75,0.1); }
+.btn-danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 35%, transparent); }
+.btn-danger:hover { background: color-mix(in srgb, var(--danger) 10%, transparent); }
 
 /* Fix G: Undo button — disabled when no action to undo, styled distinctly */
 .btn-undo { color: var(--dim); border-color: var(--border); }
@@ -624,24 +617,38 @@ body {
 .overlap-warning strong { color: var(--text); display: block; margin-bottom: 5px; }
 .overlap-warning-btns { display: flex; gap: 8px; margin-top: 10px; justify-content: flex-end; }
 
+/* Day placement picker — shown for ambiguous overnight times */
+.day-picker-banner {
+  display: none;
+  padding: 11px 14px; margin-bottom: 14px;
+  border-radius: 6px; border: 1px solid var(--trade-border);
+  background: var(--trade-bg);
+  font-size: 12px; color: var(--muted); font-family: 'DM Mono', monospace;
+}
+.day-picker-banner.show { display: block; }
+.day-picker-msg { display: block; color: var(--text); margin-bottom: 10px; letter-spacing: 0.3px; line-height: 1.5; }
+.day-picker-btns { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+
 /* Fix E: delete confirm banner replaces footer actions in-place */
 .delete-confirm-banner {
   display: none;
   padding: 11px 14px; margin-bottom: 14px;
-  border-radius: 6px; border: 1px solid rgba(217,95,75,0.4);
-  background: rgba(217,95,75,0.07);
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
+  background: var(--surface2);
   font-size: 12px; color: var(--muted); font-family: 'DM Mono', monospace;
 }
 .delete-confirm-banner.show { display: block; }
-.delete-confirm-msg { display: block; color: #e09080; margin-bottom: 10px; letter-spacing: 0.5px; }
+.delete-confirm-msg { display: block; color: var(--danger); margin-bottom: 10px; letter-spacing: 0.5px; }
 .delete-confirm-btns { display: flex; gap: 8px; justify-content: flex-end; }
 
 /* Inline modal error */
 .modal-error {
   display: none; margin-bottom: 14px;
   padding: 9px 12px; border-radius: 6px;
-  background: rgba(217,95,75,0.1); border: 1px solid rgba(217,95,75,0.35);
-  font-size: 12px; color: #e09080; font-family: 'DM Mono', monospace;
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
+  font-size: 12px; color: var(--danger); font-family: 'DM Mono', monospace;
   letter-spacing: 0.5px; line-height: 1.5;
 }
 .modal-error.show { display: block; }
@@ -654,7 +661,8 @@ body {
 }
 .reset-overlay.open { display: flex; }
 .reset-box {
-  background: var(--surface2); border: 1px solid rgba(217,95,75,0.4);
+  background: var(--surface2);
+  border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
   border-radius: 12px; padding: 28px; max-width: 380px; width: 90%; text-align: center;
 }
 .reset-box h3 {
@@ -697,6 +705,25 @@ body {
   margin-bottom: 4px;
 }
 
+/* Fix C: floating add block button */
+.fab-add {
+  position: fixed;
+  bottom: 28px;
+  left: max(28px, calc(50% - 550px));
+  width: 48px; height: 48px; border-radius: 50%;
+  background: var(--trade-bg); border: 1px solid var(--trade-border);
+  color: var(--trade); font-size: 24px; font-weight: 300; line-height: 1;
+  cursor: pointer; z-index: 50;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s; box-shadow: 0 2px 16px rgba(0,0,0,0.3);
+}
+.fab-add:hover {
+  background: var(--trade-border);
+  box-shadow: 0 0 20px var(--trade-bg), 0 2px 16px rgba(0,0,0,0.3);
+  transform: scale(1.08);
+}
+
+/* ── TABLET: 601–768px — toolbar wraps, separators hidden ── */
 @media (max-width: 768px) and (min-width: 601px) {
   .toolbar-right { flex-wrap: wrap; gap: 6px; }
   .toolbar-sep { display: none; }
@@ -756,24 +783,6 @@ body {
   .footer-wrap { margin-top: 16px; }
   .footer { padding: 12px 16px; }
   .footer p { font-size: 9px; }
-}
-
-/* Fix C: floating add block button */
-.fab-add {
-  position: fixed;
-  bottom: 28px;
-  left: max(28px, calc(50% - 550px));
-  width: 48px; height: 48px; border-radius: 50%;
-  background: var(--trade-bg); border: 1px solid var(--trade-border);
-  color: var(--trade); font-size: 24px; font-weight: 300; line-height: 1;
-  cursor: pointer; z-index: 50;
-  display: flex; align-items: center; justify-content: center;
-  transition: all 0.2s; box-shadow: 0 2px 16px rgba(0,0,0,0.3);
-}
-.fab-add:hover {
-  background: var(--trade-border);
-  box-shadow: 0 0 20px var(--trade-bg), 0 2px 16px rgba(0,0,0,0.3);
-  transform: scale(1.08);
 }
 
 /* Fix G: toast with inline undo button */
@@ -1011,6 +1020,15 @@ body {
           <button class="btn btn-primary" onclick="saveBlockForce()">Save Anyway</button>
         </div>
       </div>
+      <!-- Day placement picker — shown for ambiguous midnight times -->
+      <div class="day-picker-banner" id="dayPickerBanner">
+        <span class="day-picker-msg" id="dayPickerMsg"></span>
+        <div class="day-picker-btns">
+          <button class="btn" onclick="dismissDayPicker()">← Go Back</button>
+          <button class="btn btn-primary" id="dayPickerThisDay" onclick="commitWithDay('this')"></button>
+          <button class="btn btn-primary" id="dayPickerNextDay" onclick="commitWithDay('next')"></button>
+        </div>
+      </div>
       <!-- Delete confirm banner — shown in-place when delete is armed -->
       <div class="delete-confirm-banner" id="deleteConfirmBanner">
         <span class="delete-confirm-msg">Delete this block permanently?</span>
@@ -1241,12 +1259,13 @@ function getTemplate(i) {
 // STORAGE
 // ─────────────────────────────────────────────────────
 
-// Returns true if every block in weekData passes validateBlock
-function weekDataIsValid() {
+// Validates raw saved data — called on version mismatch before any template-filling
+function validateRawData(data) {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return false;
   for (let i = 0; i < 7; i++) {
-    const day = weekData[i];
-    if (!Array.isArray(day)) return false;
-    for (const b of day) {
+    if (data[i] === undefined) continue; // missing days are fine — will be filled
+    if (!Array.isArray(data[i])) return false;
+    for (const b of data[i]) {
       if (!validateBlock(b)) return false;
     }
   }
@@ -1257,49 +1276,87 @@ function loadFromStorage() {
   let storedVersion = null;
   try { storedVersion = localStorage.getItem(VERSION_KEY); } catch(e) {}
 
+  // Read raw saved data — do NOT fill missing days yet
+  let rawData = null;
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       const parsed = JSON.parse(saved);
       if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-        weekData = parsed;
-      } else {
-        weekData = {};
+        rawData = parsed;
       }
     }
-  } catch(e) { weekData = {}; }
+  } catch(e) {}
 
-  // Fill any missing days with templates regardless of version path
+  const currentVersionStr = String(APP_VERSION);
+  let postInitToast = null;
+
+  if (rawData === null) {
+    // Genuine first visit — no saved data at all
+    weekData = {};
+    try { localStorage.setItem(VERSION_KEY, currentVersionStr); } catch(e) {}
+
+  } else if (storedVersion === currentVersionStr) {
+    // Version matches — trust the data
+    weekData = rawData;
+
+  } else {
+    // Version mismatch OR pre-versioning data (storedVersion === null but data exists)
+    // Validate the raw data BEFORE filling in any missing days
+    if (validateRawData(rawData)) {
+      weekData = rawData;
+      try { localStorage.setItem(VERSION_KEY, currentVersionStr); } catch(e) {}
+      // Only show a toast for real version bumps, not silent first-time stamping
+      if (storedVersion !== null) {
+        postInitToast = 'App updated — your schedule has been kept ✓';
+      }
+    } else {
+      // Incompatible data — reset all days to templates
+      weekData = {};
+      try { localStorage.setItem(VERSION_KEY, currentVersionStr); } catch(e) {}
+      if (storedVersion !== null) {
+        postInitToast = 'App updated — schedule reset to defaults';
+      }
+    }
+  }
+
+  // Now fill any missing days with the correct templates
   for (let i = 0; i < 7; i++) {
     if (!weekData[i] || !Array.isArray(weekData[i])) {
       weekData[i] = getTemplate(i);
     }
   }
 
-  const currentVersionStr = String(APP_VERSION);
-  let postInitToast = null;
-
-  if (storedVersion === null) {
-    // First visit or pre-versioning data — accept as-is and stamp the version
-    try { localStorage.setItem(VERSION_KEY, currentVersionStr); } catch(e) {}
-  } else if (storedVersion !== currentVersionStr) {
-    // App has been updated — validate the user's saved data
-    if (weekDataIsValid()) {
-      // Data is structurally compatible — keep it, update version
-      try { localStorage.setItem(VERSION_KEY, currentVersionStr); } catch(e) {}
-      postInitToast = 'App updated — your schedule has been kept ✓';
-    } else {
-      // Data is incompatible — reset all days to default templates
-      for (let i = 0; i < 7; i++) weekData[i] = getTemplate(i);
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(weekData));
-        localStorage.setItem(VERSION_KEY, currentVersionStr);
-      } catch(e) {}
-      postInitToast = 'App updated — schedule reset to defaults';
-    }
+  // If a reset happened, persist the fresh templates immediately
+  if (postInitToast && postInitToast.includes('reset')) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(weekData)); } catch(e) {}
   }
 
-  // Sort every day — covers both fresh templates and loaded data
+// Move any blocks with times 00:00–05:59 to the next day.
+// Runs on load and import to normalise legacy data and keep storage clean.
+function normalizeMidnightBlocks() {
+  for (let i = 0; i < 7; i++) {
+    const nextDay = (i + 1) % 7;
+    const toMove = [];
+    const remaining = [];
+    for (const b of (weekData[i] || [])) {
+      if (isOvernightTime(b.time)) {
+        toMove.push(b);
+      } else {
+        remaining.push(b);
+      }
+    }
+    if (toMove.length) {
+      weekData[i] = remaining;
+      weekData[nextDay] = (weekData[nextDay] || []).concat(toMove);
+    }
+  }
+}
+
+  // Normalise any midnight blocks to their correct next-day position
+  normalizeMidnightBlocks();
+
+  // Sort every day
   for (let i = 0; i < 7; i++) {
     weekData[i].sort((a, b) => sortKey(a) - sortKey(b));
   }
@@ -1393,10 +1450,10 @@ function updateClock() {
 // ─────────────────────────────────────────────────────
 // NOW BANNER
 // ─────────────────────────────────────────────────────
-// Note: times before 06:00 are treated as "next day" (+1440 min offset)
-// so overnight blocks (e.g. 00:15 sleep) sort after late-night blocks.
-// Intentional for this schedule's structure. Early-morning blocks (before 6am)
-// will always appear at the end of the day list by design.
+// timeToMins applies a +1440 offset for h<6 so that midnight-crossing durations
+// compare correctly (e.g. Sleep at 23:00 + 6h is correctly active at 01:00 AM).
+// This is used ONLY for time comparison (Now detection, bleed-in).
+// Sort order uses sortKey (raw h*60+m) — midnight blocks live on the next day.
 function timeToMins(t) {
   if (!t) return 0;
   const parts = t.split(':').map(Number);
@@ -1405,9 +1462,20 @@ function timeToMins(t) {
   return h < 6 ? h * 60 + m + 1440 : h * 60 + m;
 }
 
-// Sort comparator key for all blocks
+// Returns true if a time string falls in 00:00–05:59 (belongs on the next day)
+function isOvernightTime(t) {
+  const h = parseInt((t || '').split(':')[0], 10);
+  return !isNaN(h) && h >= 0 && h < 6;
+}
+
+// Sort comparator key — raw clock order, no overnight offset.
+// Midnight blocks (00:00–05:59) live on the next day already, so they sort
+// naturally at the top of that day.
 function sortKey(block) {
-  return timeToMins(block.time);
+  const parts = (block.time || '').split(':').map(Number);
+  const h = parts[0], m = parts[1];
+  if (isNaN(h) || isNaN(m)) return 0;
+  return h * 60 + m;
 }
 
 // Return all blocks from the previous schedule-day that run past 06:00 (the day boundary).
@@ -1736,24 +1804,27 @@ function cancelDeleteArm() {
 }
 
 let pendingOverlapBlock = null;
-function showOverlapWarning(conflicts, block) {
+let pendingOverlapTargetDay = null;
+function showOverlapWarning(conflicts, block, targetDay) {
   pendingOverlapBlock = block;
+  pendingOverlapTargetDay = targetDay;
   const msg = document.getElementById('overlapMsg');
   const list = document.getElementById('overlapList');
   msg.textContent = `Overlaps with ${conflicts.length} existing block${conflicts.length > 1 ? 's' : ''}:`;
   list.textContent = conflicts.map(b => `${b.time} — ${b.title} (${b.duration})`).join(' · ');
   document.getElementById('overlapWarning').classList.add('show');
-  // Fix F: hide footer action buttons — overlap buttons are now in the same footer zone
   document.getElementById('footerActions').style.display = 'none';
 }
 function dismissOverlap() {
   document.getElementById('overlapWarning').classList.remove('show');
   document.getElementById('footerActions').style.display = '';
   pendingOverlapBlock = null;
+  pendingOverlapTargetDay = null;
 }
 function saveBlockForce() {
   if (!pendingOverlapBlock) return;
-  commitBlock(pendingOverlapBlock);
+  const td = pendingOverlapTargetDay !== null ? pendingOverlapTargetDay : currentDay;
+  commitBlock(pendingOverlapBlock, td);
   dismissOverlap();
 }
 
@@ -1785,6 +1856,7 @@ function confirmImport() {
     // Sort each day so overnight/out-of-order blocks from the file land correctly
     weekData[i].sort((a, b) => sortKey(a) - sortKey(b));
   }
+  normalizeMidnightBlocks();
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(weekData));
     // Stamp the current app version so the version check on next load doesn't
@@ -1893,6 +1965,8 @@ function closeModal() {
   document.getElementById('footerActions').style.display = '';
   document.getElementById('saveBtn').style.display = '';
   document.getElementById('overlapWarning').classList.remove('show');
+  document.getElementById('dayPickerBanner').classList.remove('show');
+  _pendingBlock = null;
   pendingOverlapBlock = null;
   clearModalError();
   selectSwatch(null);
@@ -1928,56 +2002,119 @@ function saveBlock() {
 
   const block = { time, title, sub, type: safeType(type), duration, prep: isPrep, color: _selectedColor || undefined };
 
-  // Overlap check — two cases:
-  // 1. New block has a duration: check for any time-range overlap with existing blocks
-  // 2. New block has no duration: check whether its start time falls INSIDE an existing timed block
-  //    (catches e.g. adding a block at 02:00 inside the overnight Sleep window)
-  if (!isPrep) {
-    const blocks   = weekData[currentDay];
-    const newStart = timeToMins(time);
-    const newDur   = parseDurMins(duration);
+  // ── Overnight time routing (00:00–05:59) ──────────────────────────────
+  if (!isPrep && isOvernightTime(time)) {
+    const today    = todayIdx();
+    const nextDay  = (currentDay + 1) % 7;
+
+    if (currentDay === today) {
+      // Editing today's tab — check if block time has already passed in real time
+      const nowH = new Date().getHours(), nowM = new Date().getMinutes();
+      const nowRaw  = nowH * 60 + nowM;
+      const blockRaw = parseInt(time.split(':')[0]) * 60 + parseInt(time.split(':')[1]);
+
+      if (nowRaw > blockRaw) {
+        // Case 1: time has already passed — unambiguously tomorrow, auto-route with toast+undo
+        runOverlapAndCommit(block, nextDay, true);
+        return;
+      }
+    }
+
+    // Case 2 (editing today, time not yet passed) and Case 3 (editing another day) — ask
+    _pendingBlock = block;
+    document.getElementById('dayPickerMsg').textContent =
+      `${fmt12(time)} is past midnight. Should this go on ${DAYS[currentDay]} (early morning) or ${DAYS[nextDay]} (end of ${DAYS[currentDay]})?`;
+    document.getElementById('dayPickerThisDay').textContent = `Early ${DAYS[currentDay]}`;
+    document.getElementById('dayPickerNextDay').textContent = `End of ${DAYS[currentDay]} → ${DAYS[nextDay]}`;
+    document.getElementById('dayPickerBanner').classList.add('show');
+    document.getElementById('footerActions').style.display = 'none';
+    return;
+  }
+
+  runOverlapAndCommit(block, currentDay);
+}
+
+// ── Pending block for day-picker ──────────────────────────────────────────
+let _pendingBlock = null;
+
+function dismissDayPicker() {
+  document.getElementById('dayPickerBanner').classList.remove('show');
+  document.getElementById('footerActions').style.display = '';
+  _pendingBlock = null;
+}
+
+function commitWithDay(which) {
+  if (!_pendingBlock) return;
+  const nextDay = (currentDay + 1) % 7;
+  const targetDay = which === 'next' ? nextDay : currentDay;
+  dismissDayPicker();
+  runOverlapAndCommit(_pendingBlock, targetDay);
+}
+
+function runOverlapAndCommit(block, targetDay, autoRouted = false) {
+  // Overlap check against the target day
+  if (!block.prep) {
+    const blocks   = weekData[targetDay];
+    const newStart = timeToMins(block.time);
+    const newDur   = parseDurMins(block.duration);
     const newEnd   = newDur > 0 ? newStart + newDur : null;
+    const skipIdx  = (targetDay === currentDay) ? editingIndex : -1;
     const conflicts = [];
     for (let i = 0; i < blocks.length; i++) {
-      if (i === editingIndex) continue;
+      if (i === skipIdx) continue;
       const b = blocks[i];
       if (b.prep || !b.duration || parseDurMins(b.duration) === 0) continue;
       const bStart = timeToMins(b.time);
       const bEnd   = bStart + parseDurMins(b.duration);
       if (newEnd !== null) {
-        // Full range overlap
         if (newStart < bEnd && newEnd > bStart) conflicts.push(b);
       } else {
-        // No-duration: flag if start time falls inside an existing block
         if (newStart >= bStart && newStart < bEnd) conflicts.push(b);
       }
     }
     if (conflicts.length > 0) {
-      showOverlapWarning(conflicts, block);
+      showOverlapWarning(conflicts, block, targetDay);
       return;
     }
   }
-
-  commitBlock(block);
+  commitBlock(block, targetDay, autoRouted);
 }
 
-function commitBlock(block) {
-  const isNew = editingIndex === null;
-  const blocks = weekData[currentDay];
-  // Save undo snapshot before mutating
-  undoStack[currentDay] = clone(blocks);
+function commitBlock(block, targetDay, autoRouted = false) {
+  if (targetDay === undefined) targetDay = currentDay;
+  const isNew    = editingIndex === null;
+  const crossDay = targetDay !== currentDay;
+
+  undoStack[currentDay] = clone(weekData[currentDay]);
+  if (crossDay) undoStack[targetDay] = clone(weekData[targetDay]);
+
   if (isNew) {
-    blocks.push(block);
+    weekData[targetDay].push(block);
   } else {
-    blocks[editingIndex] = block;
+    if (crossDay) {
+      weekData[currentDay].splice(editingIndex, 1);
+      weekData[targetDay].push(block);
+    } else {
+      weekData[currentDay][editingIndex] = block;
+    }
   }
-  blocks.sort((a, b) => sortKey(a) - sortKey(b));
-  weekData[currentDay] = blocks;
+
+  weekData[targetDay].sort((a, b) => sortKey(a) - sortKey(b));
+  if (crossDay) weekData[currentDay].sort((a, b) => sortKey(a) - sortKey(b));
+
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(weekData)); } catch(e) {}
   closeModal();
   renderSchedule();
   syncUndoButton();
-  showToast(isNew ? 'Block added ✓' : 'Block saved ✓');
+
+  if (autoRouted) {
+    // Case 1: auto-routed past midnight — toast with undo so user can correct if needed
+    showToast(`Auto-moved to ${DAYS[targetDay]} ✓`, true);
+  } else if (crossDay) {
+    showToast(`${isNew ? 'Added' : 'Moved'} to ${DAYS[targetDay]} ✓`, true);
+  } else {
+    showToast(isNew ? 'Block added ✓' : 'Block saved ✓');
+  }
 }
 
 function deleteBlock() {
