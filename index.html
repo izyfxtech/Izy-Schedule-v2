@@ -14,88 +14,160 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
+/* ═══════════════════════════════════════════════════════
+   AXIS 1: BRIGHTNESS — controls surfaces, text, borders
+   Default (no attribute) = Espresso warm dark
+   ═══════════════════════════════════════════════════════ */
 :root {
-  /* ── THEME: ESPRESSO (default) — warm dark espresso, amber gold ── */
-  --bg:       #090704;
-  --surface:  #100d09;
-  --surface2: #16120d;
-  --border:   #1e1810;
-  --border2:  #261f14;
-  --text:     #ddd0bc;
-  --muted:    #7a6e5c;
-  --dim:      #4a4030;
+  --bg:       #0a0806;
+  --surface:  #120f0a;
+  --surface2: #1a1510;
+  --border:   #241c12;
+  --border2:  #2e2418;
+  --text:     #e2d4be;
+  --muted:    #826e56;
+  --dim:      #4c3e2c;
+  --weekend-color:  #907060;
+  --weekend-active: #c09870;
+  --danger:   #d95f4b;
 
+  /* ── AXIS 2: ACCENT — default Espresso amber ── */
   --trade:        #e8a020;
-  --trade-bg:     rgba(232,160,32,0.07);
-  --trade-border: rgba(232,160,32,0.35);
-  --trade-title:  #f0c060;
-  --current-shadow: 0 0 0 1px rgba(232,160,32,0.45), 0 2px 20px rgba(232,160,32,0.08);
-  --weekend-color:  #8a6a50;
-  --weekend-active: #b08060;
-  --prep-bg:   rgba(50,36,10,0.35);
-  --prep-bd:   rgba(232,160,32,0.25);
+  --trade-bg:     rgba(232,160,32,0.08);
+  --trade-border: rgba(232,160,32,0.32);
+  --trade-title:  #f4c455;
+  --current-shadow: 0 0 0 1px rgba(232,160,32,0.42), 0 2px 24px rgba(232,160,32,0.1);
+  --prep-bg:   rgba(52,38,10,0.4);
+  --prep-bd:   rgba(232,160,32,0.22);
+}
 
-  --danger: #d95f4b;
+/* ── BRIGHTNESS: Dark (neutral) ── */
+[data-brightness="dark"] {
+  --bg:       #0a0a0a;
+  --surface:  #141414;
+  --surface2: #1e1e1e;
+  --border:   #2a2a2a;
+  --border2:  #363636;
+  --text:     #f0f0f0;
+  --muted:    #707070;
+  --dim:      #404040;
+  --weekend-color:  #585858;
+  --weekend-active: #909090;
+  --danger:   #e04040;
+}
+
+/* ── BRIGHTNESS: Light ── */
+[data-brightness="light"] {
+  --bg:       #ffffff;
+  --surface:  #f4f4f5;
+  --surface2: #e8e8ec;
+  --border:   #d4d4d8;
+  --border2:  #c0c0c8;
+  --text:     #0e0e12;
+  --muted:    #6c6c80;
+  --dim:      #a8a8b8;
+  --weekend-color:  #8888a0;
+  --weekend-active: #4040a0;
+  --danger:   #cc2222;
+}
+
+/* ── BRIGHTNESS: Warm (Parchment) ── */
+[data-brightness="warm"] {
+  --bg:       #f9f3e5;
+  --surface:  #f1e9d4;
+  --surface2: #e8dfca;
+  --border:   #d4c8aa;
+  --border2:  #c6b898;
+  --text:     #1c1408;
+  --muted:    #7c6a4e;
+  --dim:      #b0a080;
+  --weekend-color:  #9e8060;
+  --weekend-active: #6a4828;
+  --danger:   #c02828;
 }
 
 /* ═══════════════════════════════════════════════════════
-   THEME: TERMINAL — phosphor green on near-black
+   AXIS 2: ACCENT — controls trade/highlight colour
+   Default = Espresso amber (set in :root above)
    ═══════════════════════════════════════════════════════ */
-[data-theme="terminal"] {
-  --bg:       #020904;  --surface:  #060f08;  --surface2: #091309;
-  --border:   #101e12;  --border2:  #162816;
-  --text:     #7adf90;  --muted:    #3a6444;  --dim:      #1e3a24;
 
-  --trade:        #00e060;
-  --trade-bg:     rgba(0,224,96,0.07);
-  --trade-border: rgba(0,224,96,0.35);
-  --trade-title:  #60ffa0;
-  --current-shadow: 0 0 0 1px rgba(0,224,96,0.5), 0 2px 24px rgba(0,224,96,0.12);
-  --weekend-color:  #2e6e40;   --weekend-active: #50a060;
-  --prep-bg: rgba(0,30,10,0.5); --prep-bd: rgba(0,224,96,0.22);
-
-  --danger: #ff4a36;
+/* ── ACCENT: Terminal ── */
+[data-accent="terminal"] {
+  --trade:        #10d864;
+  --trade-bg:     rgba(16,216,100,0.07);
+  --trade-border: rgba(16,216,100,0.30);
+  --trade-title:  #48f088;
+  --current-shadow: 0 0 0 1px rgba(16,216,100,0.42), 0 2px 24px rgba(16,216,100,0.1);
+  --prep-bg: rgba(4,26,12,0.55);
+  --prep-bd: rgba(16,216,100,0.20);
 }
 
-/* ═══════════════════════════════════════════════════════
-   THEME: SLATE — cool navy, electric-blue accent
-   ═══════════════════════════════════════════════════════ */
-[data-theme="slate"] {
-  --bg:       #07070f;  --surface:  #0c0d1a;  --surface2: #101222;
-  --border:   #191b2e;  --border2:  #20233c;
-  --text:     #c4cce8;  --muted:    #525878;  --dim:      #2c3050;
-
-  --trade:        #5588f0;
-  --trade-bg:     rgba(85,136,240,0.08);
-  --trade-border: rgba(85,136,240,0.38);
-  --trade-title:  #88aaff;
-  --current-shadow: 0 0 0 1px rgba(85,136,240,0.5), 0 2px 24px rgba(85,136,240,0.12);
-  --weekend-color:  #3a4068;  --weekend-active: #6878b8;
-  --prep-bg: rgba(20,22,55,0.45); --prep-bd: rgba(85,136,240,0.22);
-
-  --danger: #e04860;
+/* ── ACCENT: Slate ── */
+[data-accent="slate"] {
+  --trade:        #4a80f8;
+  --trade-bg:     rgba(74,128,248,0.08);
+  --trade-border: rgba(74,128,248,0.34);
+  --trade-title:  #80a8ff;
+  --current-shadow: 0 0 0 1px rgba(74,128,248,0.46), 0 2px 24px rgba(74,128,248,0.12);
+  --prep-bg: rgba(14,16,58,0.5);
+  --prep-bd: rgba(74,128,248,0.20);
 }
 
-/* ═══════════════════════════════════════════════════════
-   THEME: PARCHMENT — warm cream paper, sepia ink
-   ═══════════════════════════════════════════════════════ */
-[data-theme="parchment"] {
-  --bg:       #f5f0e6;  --surface:  #ece6d8;  --surface2: #e4dece;
-  --border:   #d4ccba;  --border2:  #c8c0aa;
-  --text:     #2c2016;  --muted:    #8a7a62;  --dim:      #b8aa90;
-
-  --trade:        #8c4c10;
-  --trade-bg:     rgba(140,76,16,0.08);
-  --trade-border: rgba(140,76,16,0.32);
-  --trade-title:  #6a3408;
-  --current-shadow: 0 0 0 1px rgba(140,76,16,0.4), 0 2px 16px rgba(140,76,16,0.08);
-  --weekend-color:  #a08060;  --weekend-active: #7a5a38;
-  --prep-bg: rgba(180,140,80,0.15); --prep-bd: rgba(140,76,16,0.28);
-
-  --danger: #c02828;
+/* ── ACCENT: Midnight ── */
+[data-accent="midnight"] {
+  --trade:        #8868f8;
+  --trade-bg:     rgba(136,104,248,0.08);
+  --trade-border: rgba(136,104,248,0.33);
+  --trade-title:  #a890ff;
+  --current-shadow: 0 0 0 1px rgba(136,104,248,0.44), 0 2px 24px rgba(136,104,248,0.12);
+  --prep-bg: rgba(24,20,60,0.5);
+  --prep-bd: rgba(136,104,248,0.22);
 }
 
-/* ── Smooth transition across all theme-sensitive surfaces ── */
+/* ── ACCENT: Crimson ── */
+[data-accent="crimson"] {
+  --trade:        #e8386a;
+  --trade-bg:     rgba(232,56,106,0.08);
+  --trade-border: rgba(232,56,106,0.32);
+  --trade-title:  #ff6888;
+  --current-shadow: 0 0 0 1px rgba(232,56,106,0.44), 0 2px 24px rgba(232,56,106,0.1);
+  --prep-bg: rgba(50,10,28,0.55);
+  --prep-bd: rgba(232,56,106,0.20);
+}
+
+/* ── ACCENT: Arctic ── */
+[data-accent="arctic"] {
+  --trade:        #18c8f0;
+  --trade-bg:     rgba(24,200,240,0.07);
+  --trade-border: rgba(24,200,240,0.30);
+  --trade-title:  #58e0ff;
+  --current-shadow: 0 0 0 1px rgba(24,200,240,0.40), 0 2px 24px rgba(24,200,240,0.1);
+  --prep-bg: rgba(8,38,58,0.55);
+  --prep-bd: rgba(24,200,240,0.20);
+}
+
+/* ── ACCENT: Dusk ── */
+[data-accent="dusk"] {
+  --trade:        #c060e8;
+  --trade-bg:     rgba(192,96,232,0.08);
+  --trade-border: rgba(192,96,232,0.32);
+  --trade-title:  #e090ff;
+  --current-shadow: 0 0 0 1px rgba(192,96,232,0.42), 0 2px 24px rgba(192,96,232,0.1);
+  --prep-bg: rgba(40,16,64,0.55);
+  --prep-bd: rgba(192,96,232,0.22);
+}
+
+/* ── Light brightness overrides for accent prep-bg opacity ──
+   Dark prep-bg values use high opacity which looks fine on dark.
+   On light/warm backgrounds we force a lower opacity tint instead. ── */
+[data-brightness="light"] [data-accent],
+[data-brightness="light"][data-accent] {
+  --prep-bg: var(--trade-bg);
+}
+[data-brightness="warm"] [data-accent],
+[data-brightness="warm"][data-accent] {
+  --prep-bg: var(--trade-bg);
+}
 html, body, .header, .now-panel, .day-tab, .schedule-wrapper,
 .toolbar, .btn, .block-content, .prep-bar, .modal,
 .reset-box, .toast, .footer, .form-group input,
@@ -540,7 +612,7 @@ body {
 .overlap-warning {
   display: none; margin-bottom: 14px;
   padding: 10px 13px; border-radius: 6px;
-  background: rgba(232,160,32,0.06); border: 1px solid rgba(232,160,32,0.25);
+  background: var(--trade-bg); border: 1px solid var(--trade-border);
   font-size: 12px; color: var(--muted); font-family: 'DM Mono', monospace;
   letter-spacing: 0.3px; line-height: 1.6;
 }
@@ -693,6 +765,25 @@ body {
 .swatch-inner {
   width: 12px; height: 12px; border-radius: 50%; display: block; pointer-events: none;
 }
+
+/* ── BRIGHTNESS TOGGLE ── */
+.theme-picker-sep {
+  width: 1px; height: 16px; background: var(--border2); flex-shrink: 0; margin: 0 2px;
+}
+.brightness-toggle {
+  display: flex; align-items: center; gap: 0;
+  border: 1px solid var(--border2); border-radius: 6px;
+  overflow: hidden; flex-shrink: 0;
+}
+.brightness-btn {
+  font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.5px;
+  padding: 4px 8px; background: var(--surface); color: var(--muted);
+  border: none; cursor: pointer; transition: background 0.15s, color 0.15s;
+  white-space: nowrap; line-height: 1;
+}
+.brightness-btn:not(:last-child) { border-right: 1px solid var(--border2); }
+.brightness-btn:hover { background: var(--surface2); color: var(--text); }
+.brightness-btn.active { background: var(--surface2); color: var(--text); }
 </style>
 </head>
 <body>
@@ -711,19 +802,35 @@ body {
       <span class="badge badge-yellow">Click any block to edit</span>
     </div>
     <div class="theme-picker" id="themePicker">
-      <span class="theme-picker-label">Theme</span>
-      <button class="theme-swatch" data-theme="espresso" title="Espresso">
+      <span class="theme-picker-label">Accent</span>
+      <button class="theme-swatch" data-accent="espresso" title="Espresso" onclick="applyAccent('espresso')">
         <span class="swatch-inner" style="background:#e8a020"></span>
       </button>
-      <button class="theme-swatch" data-theme="terminal" title="Terminal">
-        <span class="swatch-inner" style="background:#00e060"></span>
+      <button class="theme-swatch" data-accent="terminal" title="Terminal" onclick="applyAccent('terminal')">
+        <span class="swatch-inner" style="background:#10d864"></span>
       </button>
-      <button class="theme-swatch" data-theme="slate" title="Slate">
-        <span class="swatch-inner" style="background:#5588f0"></span>
+      <button class="theme-swatch" data-accent="slate" title="Slate" onclick="applyAccent('slate')">
+        <span class="swatch-inner" style="background:#4a80f8"></span>
       </button>
-      <button class="theme-swatch" data-theme="parchment" title="Parchment">
-        <span class="swatch-inner" style="background:#8c4c10"></span>
+      <button class="theme-swatch" data-accent="midnight" title="Midnight" onclick="applyAccent('midnight')">
+        <span class="swatch-inner" style="background:#8868f8"></span>
       </button>
+      <button class="theme-swatch" data-accent="crimson" title="Crimson" onclick="applyAccent('crimson')">
+        <span class="swatch-inner" style="background:#e8386a"></span>
+      </button>
+      <button class="theme-swatch" data-accent="arctic" title="Arctic" onclick="applyAccent('arctic')">
+        <span class="swatch-inner" style="background:#18c8f0"></span>
+      </button>
+      <button class="theme-swatch" data-accent="dusk" title="Dusk" onclick="applyAccent('dusk')">
+        <span class="swatch-inner" style="background:#c060e8"></span>
+      </button>
+      <div class="theme-picker-sep"></div>
+      <div class="brightness-toggle" id="brightnessToggle" title="Switch background brightness">
+        <button class="brightness-btn" data-brightness="light" onclick="applyBrightness('light')">☀ Light</button>
+        <button class="brightness-btn" data-brightness="espresso" onclick="applyBrightness('espresso')">◑ Warm</button>
+        <button class="brightness-btn" data-brightness="warm" onclick="applyBrightness('warm')">☕ Paper</button>
+        <button class="brightness-btn" data-brightness="dark" onclick="applyBrightness('dark')">◗ Dark</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1897,35 +2004,60 @@ document.addEventListener('keydown', e => {
 // ─────────────────────────────────────────────────────
 // THEMES
 // ─────────────────────────────────────────────────────
-const THEMES = ['espresso', 'terminal', 'slate', 'parchment'];
-const THEME_KEY = 'izy-theme-v1';
+const ACCENTS    = ['espresso', 'terminal', 'slate', 'midnight', 'crimson', 'arctic', 'dusk'];
+const BRIGHTNESS = ['espresso', 'dark', 'light', 'warm'];
+const ACCENT_KEY     = 'izy-accent-v1';
+const BRIGHTNESS_KEY = 'izy-brightness-v1';
 
-function applyTheme(name) {
-  const theme = THEMES.includes(name) ? name : 'espresso';
-  // espresso is :root defaults — no data-theme attr needed
-  if (theme === 'espresso') {
-    document.documentElement.removeAttribute('data-theme');
+function applyAccent(name) {
+  const accent = ACCENTS.includes(name) ? name : 'espresso';
+  if (accent === 'espresso') {
+    document.documentElement.removeAttribute('data-accent');
   } else {
-    document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.setAttribute('data-accent', accent);
   }
-  // Update swatch active state
   document.querySelectorAll('.theme-swatch').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.theme === theme);
+    btn.classList.toggle('active', btn.dataset.accent === accent);
   });
-  // Persist
-  try { localStorage.setItem(THEME_KEY, theme); } catch(e) {}
+  try { localStorage.setItem(ACCENT_KEY, accent); } catch(e) {}
+}
+
+function applyBrightness(name) {
+  const b = BRIGHTNESS.includes(name) ? name : 'espresso';
+  if (b === 'espresso') {
+    document.documentElement.removeAttribute('data-brightness');
+  } else {
+    document.documentElement.setAttribute('data-brightness', b);
+  }
+  document.querySelectorAll('.brightness-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.brightness === b);
+  });
+  try { localStorage.setItem(BRIGHTNESS_KEY, b); } catch(e) {}
 }
 
 function loadTheme() {
-  let saved = 'espresso';
-  try { saved = localStorage.getItem(THEME_KEY) || 'espresso'; } catch(e) {}
-  applyTheme(saved);
-}
+  let accent = 'espresso', brightness = 'espresso';
+  try { accent     = localStorage.getItem(ACCENT_KEY)     || 'espresso'; } catch(e) {}
+  try { brightness = localStorage.getItem(BRIGHTNESS_KEY) || 'espresso'; } catch(e) {}
 
-// Wire up swatch buttons
-document.querySelectorAll('.theme-swatch').forEach(btn => {
-  btn.addEventListener('click', () => applyTheme(btn.dataset.theme));
-});
+  // Migrate anyone who had a legacy single-axis theme saved
+  const LEGACY_KEY = 'izy-theme-v1';
+  try {
+    const legacy = localStorage.getItem(LEGACY_KEY);
+    if (legacy && !localStorage.getItem(ACCENT_KEY) && !localStorage.getItem(BRIGHTNESS_KEY)) {
+      const legacyBrightnessMap = { light: 'light', parchment: 'warm', dark: 'dark' };
+      if (legacyBrightnessMap[legacy]) {
+        brightness = legacyBrightnessMap[legacy];
+      } else if (ACCENTS.includes(legacy)) {
+        accent = legacy;
+      }
+      localStorage.removeItem(LEGACY_KEY);
+    }
+  } catch(e) {}
+
+  applyAccent(accent);
+  applyBrightness(brightness);
+}
 
 // ─────────────────────────────────────────────────────
 // INIT
