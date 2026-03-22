@@ -176,6 +176,8 @@ body {
   font-family: 'DM Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   min-height: 100vh;
   padding-bottom: 80px;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 ::-webkit-scrollbar { width: 6px; }
@@ -582,6 +584,8 @@ body {
   width: 100%; background: var(--surface); border: 1px solid var(--border2);
   border-radius: 6px; color: var(--text); font-family: 'DM Sans', sans-serif;
   font-size: 13px; padding: 9px 12px; outline: none; transition: border-color 0.15s;
+  user-select: text;
+  -webkit-user-select: text;
 }
 .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: var(--trade); }
 .form-group select:disabled { opacity: 0.35; cursor: not-allowed; }
@@ -670,7 +674,7 @@ body {
   color: var(--danger); margin-bottom: 12px;
 }
 .reset-box p { font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 20px; }
-.reset-box-btns { display: flex; gap: 10px; justify-content: center; }
+.reset-box-btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 
 /* ── TOAST — see Fix G block below for full definition ── */
 
@@ -941,6 +945,7 @@ body {
       <div class="toolbar-sep"></div>
       <button class="btn" id="notifBtn" onclick="toggleNotifications()" title="Toggle block start notifications">🔕 Notifs Off</button>
       <div class="toolbar-sep"></div>
+      <button class="btn" id="saveDefaultBtn" onclick="saveAsDefault()" title="Save current schedule as the default for this day">Save as Default</button>
       <button class="btn btn-danger" onclick="showResetConfirm()" title="Reset this day to its default template">Reset Day</button>
     </div>
   </div>
@@ -1077,9 +1082,10 @@ body {
 <div class="reset-overlay" id="resetOverlay">
   <div class="reset-box">
     <h3>Reset Day?</h3>
-    <p>This will restore the default template for <strong id="resetDayName">this day</strong>. Your saved changes will be lost.</p>
+    <p id="resetMsg">This will restore the default template for <strong id="resetDayName">this day</strong>. Your saved changes will be lost.</p>
     <div class="reset-box-btns">
       <button class="btn" onclick="closeResetConfirm()">Cancel</button>
+      <button class="btn" id="clearDefaultBtn" onclick="clearUserDefault()" style="display:none" title="Remove custom default and revert to factory template">Clear Custom Default</button>
       <button class="btn btn-danger" onclick="confirmReset()">Reset to Default</button>
     </div>
   </div>
@@ -1101,122 +1107,153 @@ body {
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 const WEEKEND_IDS = [5, 6];
 const STORAGE_KEY = 'izy-weekly-schedule-v2';
+const USER_DEFAULT_KEY = 'izy-user-defaults-v1';
 
 // ─── App versioning ───────────────────────────────────
-// Bump APP_VERSION in code whenever a GitHub push contains changes that could
-// make saved user data structurally incompatible with new features.
-// On load:
-//   • Same version  → load normally, no action
-//   • New version, valid data  → keep user's schedule, update stored version
-//   • New version, invalid data → reset all days to default templates
-const APP_VERSION = 3;
+// Format: 'MAJOR.MINOR.PATCH'
+// • MAJOR bump  → breaking change, triggers data validation + possible reset
+// • MINOR bump  → new features, data kept, version stamp updated silently
+// • PATCH bump  → bug fixes, data kept, version stamp updated silently
+// Only the MAJOR number is compared for reset decisions.
+const APP_VERSION = '1.0.0';
 const VERSION_KEY = 'izy-app-version';
 
-const MONWED_TEMPLATE = [
-  { time:'05:00', title:'Wake Up + Freshen Up', sub:'', type:'t-admin', duration:'15m', prep:false, color:'#185FA5' },
-  { time:'05:15', title:'Morning Workout', sub:'Use your workout app', type:'t-move', duration:'45m', prep:false, color:'#3B6D11' },
-  { time:'05:55', title:'PREP', sub:'Prepare for 06:00 candle close', type:'prep', duration:'', prep:true },
-  { time:'06:00', title:'◈ Trade Check — 06:00 Candle', sub:'Trade if setup is there; quick and disciplined', type:'t-trade', duration:'30m', prep:false, color:'#BA7517' },
-  { time:'06:30', title:'French Study', sub:'Anki vocab + Language Transfer audio', type:'t-study', duration:'30m', prep:false, color:'#533AB7' },
-  { time:'07:00', title:'Shower + Breakfast + Commute Prep', sub:'', type:'t-admin', duration:'1h 30m', prep:false, color:'#185FA5' },
-  { time:'08:30', title:'Leave for Internship', sub:'', type:'t-admin', duration:'30m', prep:false, color:'#888780' },
-  { time:'09:00', title:'SIWES Internship', sub:'10 AM — quick chart check during break', type:'t-admin', duration:'7h', prep:false, color:'#888780' },
-  { time:'16:30', title:'Home — Decompress', sub:'', type:'t-life', duration:'30m', prep:false, color:'#185FA5' },
-  { time:'17:00', title:'Evening Stroll or Bicycle Ride', sub:'No phone, let the mind reset', type:'t-move', duration:'45m', prep:false, color:'#3B6D11' },
-  { time:'17:55', title:'PREP', sub:'Prepare for 18:00 candle close', type:'prep', duration:'', prep:true },
-  { time:'18:00', title:'◈ Trade Check — 18:00 Candle', sub:'', type:'t-trade', duration:'15m', prep:false, color:'#BA7517' },
-  { time:'18:15', title:'Cybersecurity / Network+', sub:'Professor Messer videos + notes', type:'t-study', duration:'1h', prep:false, color:'#993C1D' },
-  { time:'19:15', title:'Dinner + Rest', sub:'', type:'t-meal', duration:'45m', prep:false, color:'#185FA5' },
-  { time:'20:00', title:'Reading + Philosophy', sub:'Emerson, Stoics, build your worldview', type:'t-life', duration:'1h 45m', prep:false, color:'#533AB7' },
-  { time:'21:55', title:'PREP', sub:'Prepare for 22:00 candle close', type:'prep', duration:'', prep:true },
-  { time:'22:00', title:'◈ Trade Check — 22:00 Candle', sub:'', type:'t-trade', duration:'15m', prep:false, color:'#BA7517' },
-  { time:'22:15', title:'Wind Down', sub:'Journal, reflect, prep tomorrow', type:'t-admin', duration:'45m', prep:false, color:'#185FA5' },
-  { time:'23:00', title:'Sleep', sub:'Core rest — ~6h overnight', type:'t-sleep', duration:'~6h', prep:false, color:'#888780' },
+function parseMajor(v) {
+  if (!v) return null;
+  // Handle legacy integer versions (1–8) from before semantic versioning
+  if (/^\d+$/.test(v)) return parseInt(v, 10);
+  return parseInt(v.split('.')[0], 10);
+}
+
+// ─────────────────────────────────────────────────────
+// TEMPLATES — one per day (0=Mon … 6=Sun)
+// ─────────────────────────────────────────────────────
+
+const MON_TEMPLATE = [
+  { time:'06:00', title:'Wake Up + Morning Routine', sub:'Hygiene, stretch, set intentions for the week', type:'t-admin', duration:'45m', prep:false },
+  { time:'06:45', title:'Breakfast', sub:'Eat properly — no screens', type:'t-meal', duration:'30m', prep:false },
+  { time:'07:15', title:'Exercise', sub:'Gym, run, or home workout — start the week strong', type:'t-move', duration:'45m', prep:false },
+  { time:'08:00', title:'Deep Work Block 1', sub:'Most important task of the day — no interruptions', type:'t-study', duration:'2h', prep:false },
+  { time:'10:00', title:'Short Break', sub:'Step outside, hydrate, reset', type:'t-free', duration:'15m', prep:false },
+  { time:'10:15', title:'Deep Work Block 2', sub:'Continue primary task or start secondary', type:'t-study', duration:'1h 45m', prep:false },
+  { time:'12:00', title:'Lunch', sub:'Proper break — eat away from the desk', type:'t-meal', duration:'1h', prep:false },
+  { time:'13:00', title:'Admin + Emails', sub:'Respond to messages, plan the week ahead', type:'t-admin', duration:'1h', prep:false },
+  { time:'14:00', title:'Deep Work Block 3', sub:'Lighter focus — review, research, or learning', type:'t-study', duration:'2h', prep:false },
+  { time:'16:00', title:'Wrap Up + Review', sub:'Close loops, update task list, note tomorrow\'s priorities', type:'t-admin', duration:'30m', prep:false },
+  { time:'16:30', title:'Free Time', sub:'Decompress from the start of the week', type:'t-free', duration:'1h', prep:false },
+  { time:'17:30', title:'Evening Walk', sub:'Clear your head before the evening', type:'t-move', duration:'30m', prep:false },
+  { time:'18:00', title:'Dinner', sub:'Sit down, no rushing', type:'t-meal', duration:'1h', prep:false },
+  { time:'19:00', title:'Personal Development', sub:'Read, study, or work on a side project', type:'t-life', duration:'1h 30m', prep:false },
+  { time:'20:30', title:'Wind Down', sub:'Light activities, journal, prepare for sleep', type:'t-admin', duration:'1h 30m', prep:false },
+  { time:'22:00', title:'Sleep', sub:'7–8 hours — consistent bedtime builds momentum', type:'t-sleep', duration:'~8h 30m', prep:false },
 ];
 
-const TUETHU_TEMPLATE = [
-  { time:'06:00', title:'Wake Up', sub:'', type:'t-admin', duration:'10m', prep:false, color:'#185FA5' },
-  { time:'06:10', title:'Morning Workout', sub:'Use your workout app', type:'t-move', duration:'45m', prep:false, color:'#3B6D11' },
-  { time:'06:55', title:'PREP', sub:'Prepare for 07:00 candle close', type:'prep', duration:'', prep:true },
-  { time:'07:00', title:'◈ Trade Check — 07:00 Candle', sub:'', type:'t-trade', duration:'15m', prep:false, color:'#BA7517' },
-  { time:'07:15', title:'Shower + Breakfast', sub:'', type:'t-admin', duration:'45m', prep:false, color:'#185FA5' },
-  { time:'08:00', title:'French Study', sub:'Anki + Language Transfer + grammar practice', type:'t-study', duration:'1h', prep:false, color:'#533AB7' },
-  { time:'09:00', title:'Cybersecurity / Network+', sub:'Deep work, no distractions', type:'t-study', duration:'1h 45m', prep:false, color:'#993C1D' },
-  { time:'10:45', title:'PREP', sub:'Prepare for 11:00 candle close', type:'prep', duration:'', prep:true },
-  { time:'11:00', title:'◈ Trade Check — 11:00 Candle', sub:'', type:'t-trade', duration:'15m', prep:false, color:'#BA7517' },
-  { time:'11:15', title:'Reading + Philosophy', sub:'Emerson, Marcus Aurelius, Montaigne', type:'t-life', duration:'1h 15m', prep:false, color:'#533AB7' },
-  { time:'12:30', title:'Lunch + Rest', sub:'', type:'t-meal', duration:'2h', prep:false, color:'#185FA5' },
-  { time:'14:45', title:'PREP', sub:'Prepare for 15:00 candle close', type:'prep', duration:'', prep:true },
-  { time:'15:00', title:'◈ Trade Check — 15:00 Candle', sub:'', type:'t-trade', duration:'15m', prep:false, color:'#BA7517' },
-  { time:'15:15', title:'Free Time / Personal Projects', sub:'', type:'t-free', duration:'1h 15m', prep:false, color:'#888780' },
-  { time:'16:30', title:'Evening Stroll or Bicycle Ride', sub:'Protect this — it\'s your daily reset', type:'t-move', duration:'45m', prep:false, color:'#3B6D11' },
-  { time:'17:30', title:'Dinner', sub:'', type:'t-meal', duration:'1h 15m', prep:false, color:'#185FA5' },
-  { time:'18:45', title:'PREP', sub:'Prepare for 19:00 candle close', type:'prep', duration:'', prep:true },
-  { time:'19:00', title:'◈ Trade Check — 19:00 Candle', sub:'', type:'t-trade', duration:'15m', prep:false, color:'#BA7517' },
-  { time:'19:15', title:'Cybersecurity — Practice Questions / Anki', sub:'Lighter review session', type:'t-study', duration:'45m', prep:false, color:'#993C1D' },
-  { time:'20:00', title:'French Review or Extra Reading', sub:'', type:'t-study', duration:'1h 30m', prep:false, color:'#533AB7' },
-  { time:'21:30', title:'Wind Down', sub:'Journal, reflect', type:'t-admin', duration:'1h', prep:false, color:'#185FA5' },
-  { time:'22:45', title:'PREP', sub:'Prepare for 23:00 candle close', type:'prep', duration:'', prep:true },
-  { time:'23:00', title:'◈ Trade Check — 23:00 Candle', sub:'', type:'t-trade', duration:'15m', prep:false, color:'#BA7517' },
-  { time:'23:30', title:'Sleep', sub:'Core rest — ~6h 30m overnight', type:'t-sleep', duration:'~6h 30m', prep:false, color:'#888780' },
+const TUE_TEMPLATE = [
+  { time:'06:00', title:'Wake Up + Morning Routine', sub:'Hygiene, quick journal review', type:'t-admin', duration:'45m', prep:false },
+  { time:'06:45', title:'Breakfast', sub:'Fuel for the day', type:'t-meal', duration:'30m', prep:false },
+  { time:'07:15', title:'Morning Walk or Light Movement', sub:'No headphones — let the mind settle', type:'t-move', duration:'30m', prep:false },
+  { time:'07:45', title:'Deep Work Block 1', sub:'Tackle yesterday\'s carryover or the day\'s main task', type:'t-study', duration:'2h', prep:false },
+  { time:'09:45', title:'Break', sub:'Stretch, water, short walk', type:'t-free', duration:'15m', prep:false },
+  { time:'10:00', title:'Deep Work Block 2', sub:'Second focus session', type:'t-study', duration:'2h', prep:false },
+  { time:'12:00', title:'Lunch', sub:'Full break, no desk eating', type:'t-meal', duration:'1h', prep:false },
+  { time:'13:00', title:'Meetings + Collaboration', sub:'Calls, check-ins, or co-working', type:'t-admin', duration:'2h', prep:false },
+  { time:'15:00', title:'Deep Work Block 3', sub:'Afternoon focus — documentation or review', type:'t-study', duration:'1h 30m', prep:false },
+  { time:'16:30', title:'Exercise', sub:'Gym or sport session', type:'t-move', duration:'1h', prep:false },
+  { time:'17:30', title:'Freshen Up', sub:'Shower, decompress', type:'t-admin', duration:'30m', prep:false },
+  { time:'18:00', title:'Dinner', sub:'Eat well, hydrate', type:'t-meal', duration:'1h', prep:false },
+  { time:'19:00', title:'Reading or Learning', sub:'Books, courses, or podcasts', type:'t-life', duration:'1h 30m', prep:false },
+  { time:'20:30', title:'Free Time', sub:'Social, hobbies, or rest', type:'t-free', duration:'1h 30m', prep:false },
+  { time:'22:00', title:'Sleep', sub:'Consistent rest — recovery drives performance', type:'t-sleep', duration:'~8h 30m', prep:false },
 ];
 
-const FRIDAY_TEMPLATE = [
-  { time:'05:00', title:'Wake Up + Freshen Up', sub:'', type:'t-admin', duration:'15m', prep:false, color:'#185FA5' },
-  { time:'05:15', title:'Morning Workout', sub:'Use your workout app', type:'t-move', duration:'45m', prep:false, color:'#3B6D11' },
-  { time:'05:55', title:'PREP', sub:'Prepare for 06:00 candle close', type:'prep', duration:'', prep:true },
-  { time:'06:00', title:'◈ Trade Check — 06:00 Candle', sub:'Trade if setup is there; quick and disciplined', type:'t-trade', duration:'30m', prep:false, color:'#BA7517' },
-  { time:'06:30', title:'French Study', sub:'Anki vocab + Language Transfer audio', type:'t-study', duration:'30m', prep:false, color:'#533AB7' },
-  { time:'07:00', title:'Shower + Breakfast + Commute Prep', sub:'', type:'t-admin', duration:'1h 30m', prep:false, color:'#185FA5' },
-  { time:'08:30', title:'Leave for Internship', sub:'', type:'t-admin', duration:'30m', prep:false, color:'#888780' },
-  { time:'09:00', title:'SIWES Internship', sub:'10 AM — quick chart check during break', type:'t-admin', duration:'7h', prep:false, color:'#888780' },
-  { time:'16:30', title:'Home — Decompress', sub:'End of the work week — enjoy it', type:'t-life', duration:'30m', prep:false, color:'#185FA5' },
-  { time:'17:00', title:'Evening Stroll or Bicycle Ride', sub:'End of the work week — enjoy it', type:'t-move', duration:'45m', prep:false, color:'#3B6D11' },
-  { time:'17:55', title:'PREP', sub:'Prepare for 18:00 candle close', type:'prep', duration:'', prep:true },
-  { time:'18:00', title:'◈ Trade Check — 18:00 Candle', sub:'', type:'t-trade', duration:'15m', prep:false, color:'#BA7517' },
-  { time:'18:15', title:'Cybersecurity / Network+', sub:'Professor Messer videos + notes', type:'t-study', duration:'1h', prep:false, color:'#993C1D' },
-  { time:'19:15', title:'Dinner + Rest', sub:'', type:'t-meal', duration:'45m', prep:false, color:'#185FA5' },
-  { time:'20:00', title:'Reading + Philosophy', sub:'Emerson, Stoics, build your worldview', type:'t-life', duration:'1h 45m', prep:false, color:'#533AB7' },
-  { time:'21:55', title:'PREP', sub:'Prepare for 22:00 candle close', type:'prep', duration:'', prep:true },
-  { time:'22:00', title:'◈ Trade Check — 22:00 Candle (Week Close)', sub:'Last trade opportunity until Sunday evening', type:'t-trade', duration:'15m', prep:false, color:'#BA7517' },
-  { time:'22:15', title:'Wind Down', sub:'Journal the week, reflect', type:'t-admin', duration:'45m', prep:false, color:'#185FA5' },
-  { time:'23:00', title:'Sleep', sub:'Core rest — ~6h overnight', type:'t-sleep', duration:'~6h', prep:false, color:'#888780' },
+const WED_TEMPLATE = [
+  { time:'06:00', title:'Wake Up + Morning Routine', sub:'Mid-week reset — intentional start', type:'t-admin', duration:'45m', prep:false },
+  { time:'06:45', title:'Breakfast', sub:'Sit down, eat well', type:'t-meal', duration:'30m', prep:false },
+  { time:'07:15', title:'Exercise', sub:'Wednesday workout — keep the streak', type:'t-move', duration:'45m', prep:false },
+  { time:'08:00', title:'Weekly Review Checkpoint', sub:'Check progress against weekly goals, adjust plan if needed', type:'t-admin', duration:'30m', prep:false },
+  { time:'08:30', title:'Deep Work Block 1', sub:'Main deliverable of the day', type:'t-study', duration:'2h', prep:false },
+  { time:'10:30', title:'Break', sub:'Step outside briefly', type:'t-free', duration:'15m', prep:false },
+  { time:'10:45', title:'Deep Work Block 2', sub:'Continue or switch to secondary task', type:'t-study', duration:'1h 45m', prep:false },
+  { time:'12:30', title:'Lunch', sub:'Full break', type:'t-meal', duration:'1h', prep:false },
+  { time:'13:30', title:'Admin + Correspondence', sub:'Emails, messages, planning', type:'t-admin', duration:'1h', prep:false },
+  { time:'14:30', title:'Deep Work Block 3', sub:'Afternoon session — lighter or creative work', type:'t-study', duration:'2h', prep:false },
+  { time:'16:30', title:'Free Block', sub:'Flexible — errands, rest, or overflow work', type:'t-free', duration:'1h', prep:false },
+  { time:'17:30', title:'Evening Walk', sub:'Mid-week movement reset', type:'t-move', duration:'30m', prep:false },
+  { time:'18:00', title:'Dinner', sub:'Proper meal, no hurry', type:'t-meal', duration:'1h', prep:false },
+  { time:'19:00', title:'Hobby or Personal Project', sub:'Something you genuinely enjoy', type:'t-life', duration:'2h', prep:false },
+  { time:'21:00', title:'Wind Down', sub:'Journaling, light reading, or music', type:'t-admin', duration:'1h', prep:false },
+  { time:'22:00', title:'Sleep', sub:'Over the hump — rest well', type:'t-sleep', duration:'~8h 30m', prep:false },
 ];
 
-const SATURDAY_TEMPLATE = [
-  { time:'06:00', title:'Wake Up', sub:'', type:'t-admin', duration:'10m', prep:false, color:'#185FA5' },
-  { time:'06:10', title:'Morning Workout', sub:'Use your workout app', type:'t-move', duration:'50m', prep:false, color:'#3B6D11' },
-  { time:'07:00', title:'Shower + Breakfast', sub:'No chart check — market is closed all weekend', type:'t-admin', duration:'1h', prep:false, color:'#185FA5' },
-  { time:'08:00', title:'Cybersecurity / Network+', sub:'Morning deep work before laundry', type:'t-study', duration:'1h', prep:false, color:'#993C1D' },
-  { time:'09:00', title:'Laundry', sub:'Language Transfer French audio the whole time — biggest passive French session of the week', type:'t-admin', duration:'3h', prep:false, color:'#185FA5' },
-  { time:'12:00', title:'Hang Clothes + Tidy', sub:'', type:'t-admin', duration:'30m', prep:false, color:'#185FA5' },
-  { time:'12:30', title:'Lunch + Proper Rest', sub:'', type:'t-meal', duration:'1h 30m', prep:false, color:'#185FA5' },
-  { time:'14:00', title:'Reading + Philosophy', sub:'Leisurely, no pressure, no interruptions', type:'t-life', duration:'2h', prep:false, color:'#533AB7' },
-  { time:'16:00', title:'Free Time / Social / Rest', sub:'', type:'t-free', duration:'1h', prep:false, color:'#888780' },
-  { time:'17:00', title:'Evening Stroll or Bicycle Ride', sub:'', type:'t-move', duration:'45m', prep:false, color:'#3B6D11' },
-  { time:'18:00', title:'Dinner', sub:'', type:'t-meal', duration:'1h', prep:false, color:'#185FA5' },
-  { time:'19:00', title:'Light French Review or Free Reading', sub:'', type:'t-study', duration:'2h', prep:false, color:'#533AB7' },
-  { time:'21:00', title:'Wind Down', sub:'No heavy study', type:'t-admin', duration:'2h', prep:false, color:'#185FA5' },
-  { time:'23:00', title:'Sleep', sub:'Weekend rest — ~7h overnight', type:'t-sleep', duration:'~7h', prep:false, color:'#888780' },
+const THU_TEMPLATE = [
+  { time:'06:00', title:'Wake Up + Morning Routine', sub:'Almost end of the week — stay consistent', type:'t-admin', duration:'45m', prep:false },
+  { time:'06:45', title:'Breakfast', sub:'Fuel up', type:'t-meal', duration:'30m', prep:false },
+  { time:'07:15', title:'Morning Movement', sub:'Walk, cycle, or stretch', type:'t-move', duration:'30m', prep:false },
+  { time:'07:45', title:'Deep Work Block 1', sub:'Priority task — push toward week\'s finish line', type:'t-study', duration:'2h', prep:false },
+  { time:'09:45', title:'Break', sub:'Move, hydrate, breathe', type:'t-free', duration:'15m', prep:false },
+  { time:'10:00', title:'Deep Work Block 2', sub:'Second focus session', type:'t-study', duration:'2h', prep:false },
+  { time:'12:00', title:'Lunch', sub:'Eat properly, step away from the screen', type:'t-meal', duration:'1h', prep:false },
+  { time:'13:00', title:'Meetings + Collaboration', sub:'Calls, reviews, or team sync', type:'t-admin', duration:'1h 30m', prep:false },
+  { time:'14:30', title:'Deep Work Block 3', sub:'Final focused session of the day', type:'t-study', duration:'1h 30m', prep:false },
+  { time:'16:00', title:'Exercise', sub:'Thursday session — maintain momentum', type:'t-move', duration:'1h', prep:false },
+  { time:'17:00', title:'Freshen Up + Decompress', sub:'Shower, wind down from the work day', type:'t-admin', duration:'30m', prep:false },
+  { time:'17:30', title:'Free Time', sub:'Social or personal time', type:'t-free', duration:'30m', prep:false },
+  { time:'18:00', title:'Dinner', sub:'Evening meal', type:'t-meal', duration:'1h', prep:false },
+  { time:'19:00', title:'Learning or Reading', sub:'Knowledge compounds — protect this block', type:'t-life', duration:'1h 30m', prep:false },
+  { time:'20:30', title:'Free Time', sub:'Relax — Friday is close', type:'t-free', duration:'1h 30m', prep:false },
+  { time:'22:00', title:'Sleep', sub:'Strong finish tomorrow needs good rest tonight', type:'t-sleep', duration:'~8h 30m', prep:false },
 ];
 
-const SUNDAY_TEMPLATE = [
-  { time:'07:00', title:'Wake Up', sub:'Rest day, no rush', type:'t-admin', duration:'15m', prep:false, color:'#185FA5' },
-  { time:'07:15', title:'Morning Workout', sub:'', type:'t-move', duration:'45m', prep:false, color:'#3B6D11' },
-  { time:'08:00', title:'Shower + Breakfast', sub:'Settle in', type:'t-admin', duration:'1h', prep:false, color:'#185FA5' },
-  { time:'09:00', title:'Weekly Market Analysis', sub:'Review weekly candles, mark key levels, set bias. No trades — analysis only.', type:'t-trade', duration:'2h', prep:false, color:'#BA7517' },
-  { time:'11:00', title:'French Study', sub:'Conversational practice, review the week\'s material', type:'t-study', duration:'1h', prep:false, color:'#533AB7' },
-  { time:'12:00', title:'Lunch + Long Rest', sub:'', type:'t-meal', duration:'2h', prep:false, color:'#185FA5' },
-  { time:'14:00', title:'Reading + Philosophy', sub:'Sunday anchor — go deep, no rush, no interruptions', type:'t-life', duration:'2h', prep:false, color:'#533AB7' },
-  { time:'16:00', title:'Free Time', sub:'Rest, socialize, recharge', type:'t-free', duration:'1h 30m', prep:false, color:'#888780' },
-  { time:'17:30', title:'Evening Stroll or Bicycle Ride', sub:'', type:'t-move', duration:'45m', prep:false, color:'#3B6D11' },
-  { time:'18:30', title:'Dinner', sub:'', type:'t-meal', duration:'1h', prep:false, color:'#185FA5' },
-  { time:'19:30', title:'Weekly Review Journal', sub:'Trades, French, Network+ progress. What to improve?', type:'t-admin', duration:'30m', prep:false, color:'#185FA5' },
-  { time:'20:00', title:'Prep for Monday', sub:'Clothes, bag, mindset', type:'t-admin', duration:'1h', prep:false, color:'#185FA5' },
-  { time:'21:00', title:'Wind Down', sub:'Early night before internship week', type:'t-admin', duration:'45m', prep:false, color:'#185FA5' },
-  { time:'21:55', title:'PREP', sub:'Market reopens at 22:00', type:'prep', duration:'', prep:true },
-  { time:'22:00', title:'◈ Market Opens — 22:00 Candle', sub:'Quick check, set alerts, ready for Monday', type:'t-trade', duration:'15m', prep:false, color:'#BA7517' },
-  { time:'22:15', title:'Sleep', sub:'Early start tomorrow — full night\'s rest', type:'t-sleep', duration:'~8h 45m', prep:false, color:'#888780' },
+const FRI_TEMPLATE = [
+  { time:'06:30', title:'Wake Up + Morning Routine', sub:'Slightly later start — end the week well', type:'t-admin', duration:'45m', prep:false },
+  { time:'07:15', title:'Breakfast', sub:'Enjoy it — it\'s Friday', type:'t-meal', duration:'30m', prep:false },
+  { time:'07:45', title:'Weekly Priorities Sprint', sub:'Finish any outstanding tasks before the weekend', type:'t-study', duration:'2h', prep:false },
+  { time:'09:45', title:'Break', sub:'Short reset', type:'t-free', duration:'15m', prep:false },
+  { time:'10:00', title:'Deep Work Block', sub:'Final focused session of the week', type:'t-study', duration:'2h', prep:false },
+  { time:'12:00', title:'Lunch', sub:'Treat yourself — end of the work week', type:'t-meal', duration:'1h', prep:false },
+  { time:'13:00', title:'Admin + Weekly Wrap-Up', sub:'Clear inbox, close open loops, archive the week', type:'t-admin', duration:'1h 30m', prep:false },
+  { time:'14:30', title:'Weekly Review', sub:'What went well, what to improve, set next week\'s intentions', type:'t-admin', duration:'1h', prep:false },
+  { time:'15:30', title:'Free Time', sub:'Early finish — you\'ve earned it', type:'t-free', duration:'1h 30m', prep:false },
+  { time:'17:00', title:'Exercise', sub:'End-of-week workout — strong finish', type:'t-move', duration:'1h', prep:false },
+  { time:'18:00', title:'Freshen Up', sub:'Shower, transition fully out of work mode', type:'t-admin', duration:'30m', prep:false },
+  { time:'18:30', title:'Dinner', sub:'Friday dinner — cook something proper or go out', type:'t-meal', duration:'1h 30m', prep:false },
+  { time:'20:00', title:'Social or Leisure', sub:'Friends, entertainment, or a favourite hobby', type:'t-life', duration:'2h 30m', prep:false },
+  { time:'22:30', title:'Wind Down', sub:'Don\'t stay up too late — weekend starts best with rest', type:'t-admin', duration:'30m', prep:false },
+  { time:'23:00', title:'Sleep', sub:'Good week — rest well', type:'t-sleep', duration:'~7h 30m', prep:false },
+];
+
+const SAT_TEMPLATE = [
+  { time:'07:30', title:'Wake Up', sub:'Natural wake — no alarm unless needed', type:'t-admin', duration:'15m', prep:false },
+  { time:'07:45', title:'Slow Morning', sub:'Coffee, stretching, or light journaling — no rush', type:'t-life', duration:'45m', prep:false },
+  { time:'08:30', title:'Breakfast', sub:'Proper sit-down breakfast', type:'t-meal', duration:'45m', prep:false },
+  { time:'09:15', title:'Exercise', sub:'Saturday session — sport, hike, gym, or long walk', type:'t-move', duration:'1h 30m', prep:false },
+  { time:'10:45', title:'Personal Project or Creative Work', sub:'Work on something you care about, no pressure', type:'t-life', duration:'1h 30m', prep:false },
+  { time:'12:15', title:'Errands + Admin', sub:'Grocery shopping, chores, life admin', type:'t-admin', duration:'1h 45m', prep:false },
+  { time:'14:00', title:'Lunch', sub:'Weekend lunch — take your time', type:'t-meal', duration:'1h', prep:false },
+  { time:'15:00', title:'Free Time', sub:'Rest, read, or socialise — fully unscheduled', type:'t-free', duration:'2h', prep:false },
+  { time:'17:00', title:'Evening Walk or Light Activity', sub:'Weekend movement — keep the body moving', type:'t-move', duration:'45m', prep:false },
+  { time:'17:45', title:'Freshen Up', sub:'Shower, change, transition to evening', type:'t-admin', duration:'30m', prep:false },
+  { time:'18:15', title:'Dinner', sub:'Cook something you enjoy or dine out', type:'t-meal', duration:'1h 30m', prep:false },
+  { time:'19:45', title:'Social or Entertainment', sub:'Friends, films, events, or hobbies', type:'t-life', duration:'2h 30m', prep:false },
+  { time:'22:15', title:'Wind Down', sub:'No heavy content — ease into the end of the day', type:'t-admin', duration:'45m', prep:false },
+  { time:'23:00', title:'Sleep', sub:'Rest well — Sunday is for recovery', type:'t-sleep', duration:'~7h 30m', prep:false },
+];
+
+const SUN_TEMPLATE = [
+  { time:'08:00', title:'Wake Up', sub:'Rest day — gentle start', type:'t-admin', duration:'15m', prep:false },
+  { time:'08:15', title:'Slow Morning Routine', sub:'No rushing — stretch, breathe, reflect', type:'t-life', duration:'45m', prep:false },
+  { time:'09:00', title:'Breakfast', sub:'Leisurely, no screens if possible', type:'t-meal', duration:'45m', prep:false },
+  { time:'09:45', title:'Light Exercise or Walk', sub:'Sunday movement — gentle, not a training session', type:'t-move', duration:'45m', prep:false },
+  { time:'10:30', title:'Reading or Learning', sub:'Books, podcasts, or something that feeds the mind', type:'t-life', duration:'1h 30m', prep:false },
+  { time:'12:00', title:'Lunch', sub:'Proper meal — cook or go somewhere nice', type:'t-meal', duration:'1h 30m', prep:false },
+  { time:'13:30', title:'Rest or Nap', sub:'Recovery is productive — protect this', type:'t-free', duration:'1h', prep:false },
+  { time:'14:30', title:'Hobby or Creative Time', sub:'Photography, music, writing — something purely for you', type:'t-life', duration:'2h', prep:false },
+  { time:'16:30', title:'Social Time', sub:'Family, friends, or a call with someone important', type:'t-life', duration:'1h 30m', prep:false },
+  { time:'18:00', title:'Dinner', sub:'Sunday dinner — the best meal of the week', type:'t-meal', duration:'1h 30m', prep:false },
+  { time:'19:30', title:'Weekly Preview', sub:'Review next week\'s calendar, set top 3 priorities for Monday', type:'t-admin', duration:'45m', prep:false },
+  { time:'20:15', title:'Prep for the Week', sub:'Clothes, bag, workspace — remove friction from Monday morning', type:'t-admin', duration:'30m', prep:false },
+  { time:'20:45', title:'Wind Down', sub:'Light reading, journaling, or music — protect this window', type:'t-admin', duration:'1h 15m', prep:false },
+  { time:'22:00', title:'Sleep', sub:'Early night — Sunday sleep sets the tone for the whole week', type:'t-sleep', duration:'~8h 30m', prep:false },
 ];
 
 // ─────────────────────────────────────────────────────
@@ -1228,7 +1265,7 @@ const todayIdx = () => {
   // Before 6 AM we are still in yesterday's schedule (overnight Sleep block),
   // so treat as the previous calendar day.
   let d;
-  if (now.getHours() < 6) {
+  if (now.getHours() < 5) {
     const prev = new Date(now);
     prev.setDate(prev.getDate() - 1);
     d = prev.getDay();
@@ -1248,11 +1285,45 @@ const clone = obj => JSON.parse(JSON.stringify(obj));
 
 function getTemplate(i) {
   // 0=Mon, 1=Tue, 2=Wed, 3=Thu, 4=Fri, 5=Sat, 6=Sun
-  if (i === 5) return clone(SATURDAY_TEMPLATE);
-  if (i === 6) return clone(SUNDAY_TEMPLATE);
-  if (i === 4) return clone(FRIDAY_TEMPLATE);
-  if (i === 1 || i === 3) return clone(TUETHU_TEMPLATE);
-  return clone(MONWED_TEMPLATE); // Mon (0) and Wed (2)
+  const templates = [MON_TEMPLATE, TUE_TEMPLATE, WED_TEMPLATE, THU_TEMPLATE, FRI_TEMPLATE, SAT_TEMPLATE, SUN_TEMPLATE];
+  return clone(templates[i] || []);
+}
+
+// ─────────────────────────────────────────────────────
+// MIDNIGHT BLOCK NORMALISATION
+// ─────────────────────────────────────────────────────
+// Moves blocks with times 00:00–05:59 to the next calendar day UNLESS the
+// block carries earlyMorning:true. Uses two-pass to prevent cascading.
+// Also deduplicates: if the target day already has a t-sleep block, an
+// incoming overnight sleep block is dropped rather than duplicated.
+function normalizeMidnightBlocks() {
+  const additions = Array.from({ length: 7 }, () => []);
+
+  for (let i = 0; i < 7; i++) {
+    const nextDay = (i + 1) % 7;
+    const remaining = [];
+    for (const b of (weekData[i] || [])) {
+      if (isOvernightTime(b.time) && !b.earlyMorning) {
+        additions[nextDay].push(b);
+      } else {
+        remaining.push(b);
+      }
+    }
+    weekData[i] = remaining;
+  }
+
+  for (let i = 0; i < 7; i++) {
+    if (!additions[i].length) continue;
+    const dayAlreadyHasSleep = (weekData[i] || []).some(b => b.type === 't-sleep');
+    const toAdd = additions[i].filter(b => {
+      // Drop overnight sleep blocks if the target day already has sleep
+      if (b.type === 't-sleep' && dayAlreadyHasSleep) return false;
+      return true;
+    });
+    if (toAdd.length) {
+      weekData[i] = (weekData[i] || []).concat(toAdd);
+    }
+  }
 }
 
 // ─────────────────────────────────────────────────────
@@ -1262,11 +1333,19 @@ function getTemplate(i) {
 // Validates raw saved data — called on version mismatch before any template-filling
 function validateRawData(data) {
   if (!data || typeof data !== 'object' || Array.isArray(data)) return false;
+  // If every day is an empty array the user has no schedule — treat as needing reset
+  // so new templates get applied rather than keeping a blank slate
+  const totalBlocks = Object.values(data).reduce((sum, day) => sum + (Array.isArray(day) ? day.length : 0), 0);
+  if (totalBlocks === 0) return false;
   for (let i = 0; i < 7; i++) {
-    if (data[i] === undefined) continue; // missing days are fine — will be filled
+    if (data[i] === undefined) continue;
     if (!Array.isArray(data[i])) return false;
     for (const b of data[i]) {
       if (!validateBlock(b)) return false;
+      if (b.type === 't-sleep') {
+        const h = parseInt((b.time || '').split(':')[0], 10);
+        if (!isNaN(h) && h >= 0 && h < 6) return false;
+      }
     }
   }
   return true;
@@ -1288,41 +1367,44 @@ function loadFromStorage() {
     }
   } catch(e) {}
 
-  const currentVersionStr = String(APP_VERSION);
+  const currentMajor = parseMajor(APP_VERSION);
+  const storedMajor  = parseMajor(storedVersion);
   let postInitToast = null;
 
   if (rawData === null) {
     // Genuine first visit — no saved data at all
     weekData = {};
-    try { localStorage.setItem(VERSION_KEY, currentVersionStr); } catch(e) {}
+    try { localStorage.setItem(VERSION_KEY, APP_VERSION); } catch(e) {}
 
-  } else if (storedVersion === currentVersionStr) {
-    // Version matches — trust the data
+  } else if (storedVersion === APP_VERSION) {
+    // Exact match — trust the data, no action
     weekData = rawData;
 
+  } else if (storedMajor === currentMajor) {
+    // Same major, minor/patch change — keep data, silently update stamp
+    weekData = rawData;
+    try { localStorage.setItem(VERSION_KEY, APP_VERSION); } catch(e) {}
+
   } else {
-    // Version mismatch OR pre-versioning data (storedVersion === null but data exists)
-    // Validate the raw data BEFORE filling in any missing days
+    // Major version change — validate data, reset if incompatible
     if (validateRawData(rawData)) {
       weekData = rawData;
-      try { localStorage.setItem(VERSION_KEY, currentVersionStr); } catch(e) {}
-      // Only show a toast for real version bumps, not silent first-time stamping
+      try { localStorage.setItem(VERSION_KEY, APP_VERSION); } catch(e) {}
       if (storedVersion !== null) {
         postInitToast = 'App updated — your schedule has been kept ✓';
       }
     } else {
-      // Incompatible data — reset all days to templates
       weekData = {};
-      try { localStorage.setItem(VERSION_KEY, currentVersionStr); } catch(e) {}
+      try { localStorage.setItem(VERSION_KEY, APP_VERSION); } catch(e) {}
       if (storedVersion !== null) {
         postInitToast = 'App updated — schedule reset to defaults';
       }
     }
   }
 
-  // Now fill any missing days with the correct templates
+  // Now fill any missing or empty days with the correct templates
   for (let i = 0; i < 7; i++) {
-    if (!weekData[i] || !Array.isArray(weekData[i])) {
+    if (!weekData[i] || !Array.isArray(weekData[i]) || weekData[i].length === 0) {
       weekData[i] = getTemplate(i);
     }
   }
@@ -1331,27 +1413,6 @@ function loadFromStorage() {
   if (postInitToast && postInitToast.includes('reset')) {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(weekData)); } catch(e) {}
   }
-
-// Move any blocks with times 00:00–05:59 to the next day.
-// Runs on load and import to normalise legacy data and keep storage clean.
-function normalizeMidnightBlocks() {
-  for (let i = 0; i < 7; i++) {
-    const nextDay = (i + 1) % 7;
-    const toMove = [];
-    const remaining = [];
-    for (const b of (weekData[i] || [])) {
-      if (isOvernightTime(b.time)) {
-        toMove.push(b);
-      } else {
-        remaining.push(b);
-      }
-    }
-    if (toMove.length) {
-      weekData[i] = remaining;
-      weekData[nextDay] = (weekData[nextDay] || []).concat(toMove);
-    }
-  }
-}
 
   // Normalise any midnight blocks to their correct next-day position
   normalizeMidnightBlocks();
@@ -1402,6 +1463,7 @@ function validateBlock(b) {
   if (typeof b.title !== 'string') return false;
   if (b.type !== undefined && typeof b.type !== 'string') return false;
   if (b.color !== undefined && (typeof b.color !== 'string' || !/^#[0-9a-f]{6}$/i.test(b.color))) return false;
+  if (b.earlyMorning !== undefined && typeof b.earlyMorning !== 'boolean') return false;
   return true;
 }
 
@@ -1450,22 +1512,22 @@ function updateClock() {
 // ─────────────────────────────────────────────────────
 // NOW BANNER
 // ─────────────────────────────────────────────────────
-// timeToMins applies a +1440 offset for h<6 so that midnight-crossing durations
-// compare correctly (e.g. Sleep at 23:00 + 6h is correctly active at 01:00 AM).
-// This is used ONLY for time comparison (Now detection, bleed-in).
-// Sort order uses sortKey (raw h*60+m) — midnight blocks live on the next day.
+// timeToMins applies a +1440 offset for h<5 so midnight-crossing durations
+// compare correctly. Boundary matches isOvernightTime (00:00–04:59).
 function timeToMins(t) {
   if (!t) return 0;
   const parts = t.split(':').map(Number);
   const h = parts[0], m = parts[1];
-  if (isNaN(h) || isNaN(m)) return 0; // Fix 4: guard against NaN from bad input
-  return h < 6 ? h * 60 + m + 1440 : h * 60 + m;
+  if (isNaN(h) || isNaN(m)) return 0;
+  return h < 5 ? h * 60 + m + 1440 : h * 60 + m;
 }
 
-// Returns true if a time string falls in 00:00–05:59 (belongs on the next day)
+// Returns true if a time string falls in 00:00–04:59.
+// 05:00+ is treated as legitimate early-morning (e.g. 5 AM wake-up on Mon/Fri).
+// Only truly post-midnight times (00:00–04:59) are considered "next day" by default.
 function isOvernightTime(t) {
   const h = parseInt((t || '').split(':')[0], 10);
-  return !isNaN(h) && h >= 0 && h < 6;
+  return !isNaN(h) && h >= 0 && h < 5;
 }
 
 // Sort comparator key — raw clock order, no overnight offset.
@@ -1478,21 +1540,24 @@ function sortKey(block) {
   return h * 60 + m;
 }
 
-// Return all blocks from the previous schedule-day that run past 06:00 (the day boundary).
-// Uses timeToMins so overnight blocks (h<6 → +1440) are handled correctly.
-// SCHEDULE_DAY_END = 06:00 in offset-mins = 360 + 1440 = 1800
+// Returns blocks from the previous day that cross midnight into this day.
+// Uses raw clock minutes (no overnight offset) against 1440 (midnight).
+// A block starting at 22:00 lasting 8h ends at 06:00 — that crosses midnight,
+// so 6h of remaining time appears at the top of the next day.
 function getBleedIns(dayIdx) {
   const prevIdx = (dayIdx + 6) % 7;
-  const SCHEDULE_DAY_END = 1800;
+  const MIDNIGHT = 1440;
   const result = [];
   for (const b of (weekData[prevIdx] || [])) {
     if (b.prep) continue;
     const dur = parseDurMins(b.duration);
     if (dur <= 0) continue;
-    const start = timeToMins(b.time);
-    const end = start + dur;
-    if (end > SCHEDULE_DAY_END) {
-      result.push({ block: b, remainMins: end - SCHEDULE_DAY_END, fromDay: prevIdx });
+    const [h, m] = (b.time || '').split(':').map(Number);
+    if (isNaN(h) || isNaN(m)) continue;
+    const rawStart = h * 60 + m;
+    const rawEnd = rawStart + dur;
+    if (rawEnd > MIDNIGHT) {
+      result.push({ block: b, remainMins: rawEnd - MIDNIGHT, fromDay: prevIdx });
     }
   }
   return result;
@@ -1778,6 +1843,7 @@ function switchDay(idx) {
   renderTabs();
   renderSchedule();
   syncUndoButton();
+  syncSaveDefaultButton();
 }
 
 // ─────────────────────────────────────────────────────
@@ -1861,7 +1927,7 @@ function confirmImport() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(weekData));
     // Stamp the current app version so the version check on next load doesn't
     // re-evaluate (and potentially reset) the data we just imported
-    localStorage.setItem(VERSION_KEY, String(APP_VERSION));
+    localStorage.setItem(VERSION_KEY, APP_VERSION);
   } catch(e) {
     showToast('Imported (storage unavailable)');
     renderTabs(); renderSchedule();
@@ -2047,8 +2113,12 @@ function commitWithDay(which) {
   if (!_pendingBlock) return;
   const nextDay = (currentDay + 1) % 7;
   const targetDay = which === 'next' ? nextDay : currentDay;
+  // Mark explicitly early-morning blocks so normalizeMidnightBlocks won't migrate them
+  const block = which === 'this'
+    ? { ..._pendingBlock, earlyMorning: true }
+    : { ..._pendingBlock, earlyMorning: undefined };
   dismissDayPicker();
-  runOverlapAndCommit(_pendingBlock, targetDay);
+  runOverlapAndCommit(block, targetDay);
 }
 
 function runOverlapAndCommit(block, targetDay, autoRouted = false) {
@@ -2149,10 +2219,65 @@ function syncUndoButton() {
 }
 
 // ─────────────────────────────────────────────────────
+// USER DEFAULTS
+// ─────────────────────────────────────────────────────
+function loadUserDefaults() {
+  try {
+    const saved = localStorage.getItem(USER_DEFAULT_KEY);
+    return saved ? JSON.parse(saved) : {};
+  } catch(e) { return {}; }
+}
+
+function saveUserDefaults(defaults) {
+  try { localStorage.setItem(USER_DEFAULT_KEY, JSON.stringify(defaults)); } catch(e) {}
+}
+
+function getUserDefault(dayIdx) {
+  const defaults = loadUserDefaults();
+  return defaults[dayIdx] || null;
+}
+
+function saveAsDefault() {
+  const defaults = loadUserDefaults();
+  defaults[currentDay] = clone(weekData[currentDay]);
+  saveUserDefaults(defaults);
+  syncSaveDefaultButton();
+  showToast(`${DAYS[currentDay]} default saved ✓`);
+}
+
+function clearUserDefault() {
+  const defaults = loadUserDefaults();
+  delete defaults[currentDay];
+  saveUserDefaults(defaults);
+  closeResetConfirm();
+  syncSaveDefaultButton();
+  showToast('Custom default cleared — factory template will be used');
+}
+
+function syncSaveDefaultButton() {
+  const btn = document.getElementById('saveDefaultBtn');
+  if (!btn) return;
+  const hasCustom = !!getUserDefault(currentDay);
+  btn.textContent = hasCustom ? '✎ Update Default' : 'Save as Default';
+  btn.classList.toggle('btn-primary', hasCustom);
+}
+
+// ─────────────────────────────────────────────────────
 // RESET
 // ─────────────────────────────────────────────────────
 function showResetConfirm() {
   document.getElementById('resetDayName').textContent = DAYS[currentDay];
+  const hasCustom = !!getUserDefault(currentDay);
+  const msg = document.getElementById('resetMsg');
+  const clearBtn = document.getElementById('clearDefaultBtn');
+
+  if (hasCustom) {
+    msg.innerHTML = `This will restore your <strong>saved custom default</strong> for <strong id="resetDayName">${DAYS[currentDay]}</strong>. Current changes will be lost.`;
+    clearBtn.style.display = '';
+  } else {
+    msg.innerHTML = `This will restore the <strong>factory template</strong> for <strong id="resetDayName">${DAYS[currentDay]}</strong>. Your saved changes will be lost.`;
+    clearBtn.style.display = 'none';
+  }
   document.getElementById('resetOverlay').classList.add('open');
 }
 function closeResetConfirm() {
@@ -2160,12 +2285,13 @@ function closeResetConfirm() {
 }
 function confirmReset() {
   undoStack[currentDay] = clone(weekData[currentDay]);
-  weekData[currentDay] = getTemplate(currentDay);
+  const userDefault = getUserDefault(currentDay);
+  weekData[currentDay] = userDefault ? clone(userDefault) : getTemplate(currentDay);
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(weekData)); } catch(e) {}
   closeResetConfirm();
   renderSchedule();
   syncUndoButton();
-  showToast('Day reset to default', true);
+  showToast(userDefault ? 'Reset to your custom default ✓' : 'Reset to factory template ✓', true);
 }
 
 // Close reset overlay on outside click
@@ -2267,6 +2393,7 @@ const _postInitToast = loadFromStorage();
 renderTabs();
 renderSchedule();
 syncUndoButton();
+syncSaveDefaultButton();
 updateClock();
 if (_postInitToast) showToast(_postInitToast);
 
