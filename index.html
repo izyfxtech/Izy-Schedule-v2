@@ -701,13 +701,13 @@ body {
 <div class="header">
   <div>
     <h1>Weekly Schedule</h1>
-    <div class="header-sub">Integrated Trading + Life — 4H Framework</div>
+    <div class="header-sub">Trading · SIWES · French · Network+ · Philosophy</div>
   </div>
   <div class="header-right">
     <div class="clock-display" id="clockTime">--:--:-- --</div>
     <div class="clock-date" id="clockDate">---</div>
     <div class="badges">
-      <span class="badge badge-green">5× Daily Trade Checks</span>
+      <span class="badge badge-green">3–5× Daily Trade Checks</span>
       <span class="badge badge-yellow">Click any block to edit</span>
     </div>
     <div class="theme-picker" id="themePicker">
@@ -775,7 +775,7 @@ body {
 
 <!-- FOOTER -->
 <div class="footer">
-  <p>◈ Arrive 3–5 min before every candle close &nbsp;·&nbsp; Overnight 03:00 candle skipped for sleep &nbsp;·&nbsp; Changes saved automatically to this browser</p>
+  <p>◈ Candle closes: Mon–Fri 6 AM · Tue–Thu also 11 AM, 3 PM, 7 PM, 11 PM &nbsp;·&nbsp; Market closes Fri 10 PM, reopens Sun 10 PM &nbsp;·&nbsp; Changes saved automatically</p>
 </div>
 
 <!-- EDIT MODAL -->
@@ -921,63 +921,114 @@ const STORAGE_KEY = 'izy-weekly-schedule-v2';
 //   • Same version  → load normally, no action
 //   • New version, valid data  → keep user's schedule, update stored version
 //   • New version, invalid data → reset all days to default templates
-const APP_VERSION = 1;
+const APP_VERSION = 2;
 const VERSION_KEY = 'izy-app-version';
 
-const WEEKDAY_TEMPLATE = [
-  { time:'06:00', title:'Morning Routine', sub:"Hygiene, dress, journaling, intentions + yesterday's trade review. No rushing.", type:'t-admin', duration:'55m', prep:false },
-  { time:'06:55', title:'PREP', sub:'Prepare for 07:00 candle close', type:'prep', duration:'', prep:true },
-  { time:'07:00', title:'◈ Trade Check #1 — 07:00 Candle', sub:'Analyse close, mark structure, update orders if needed', type:'t-trade', duration:'15m', prep:false },
-  { time:'07:15', title:'Breakfast', sub:'Eat properly, hydrate — no screens if possible', type:'t-meal', duration:'30m', prep:false },
-  { time:'07:45', title:'Admin + Personal Tasks', sub:'Emails, errands, life admin, course-related planning — clear the plate early', type:'t-admin', duration:'1h 45m', prep:false },
-  { time:'09:30', title:'Study Block #1', sub:'Deep focus — lectures, reading, assignments. No interruptions.', type:'t-study', duration:'1h 25m', prep:false },
-  { time:'10:55', title:'PREP', sub:'Prepare for 11:00 candle close', type:'prep', duration:'', prep:true },
-  { time:'11:00', title:'◈ Trade Check #2 — 11:00 Candle', sub:'Mid-morning review, manage open positions', type:'t-trade', duration:'15m', prep:false },
-  { time:'11:15', title:'Study Block #2', sub:'Continue coursework, problem sets, or revision — longest focus window of the day', type:'t-study', duration:'1h 45m', prep:false },
-  { time:'13:00', title:'Lunch + Short Walk', sub:'Eat, get outside, mental reset — protect this gap', type:'t-meal', duration:'1h', prep:false },
-  { time:'14:00', title:'Study Block #3 — Light Review', sub:'Notes review, flashcards, or lighter coursework — lower intensity after lunch', type:'t-study', duration:'55m', prep:false },
-  { time:'14:55', title:'PREP', sub:'Prepare for 15:00 candle close', type:'prep', duration:'', prep:true },
-  { time:'15:00', title:'◈ Trade Check #3 — 15:00 Candle', sub:'Afternoon session — key US open overlap window', type:'t-trade', duration:'15m', prep:false },
-  { time:'15:15', title:'Daily Movement', sub:'Gym / walk / skipping — breaks the desk run perfectly', type:'t-move', duration:'45m', prep:false },
-  { time:'16:00', title:'Freshen Up', sub:'Shower, change — transition out of work mode', type:'t-admin', duration:'20m', prep:false },
-  { time:'16:20', title:'Free / Flexible Block', sub:'Unscheduled — social, errands, rest, or overflow study if needed', type:'t-free', duration:'1h 40m', prep:false },
-  { time:'18:00', title:'Dinner', sub:'Evening meal — sit down, no rushing', type:'t-meal', duration:'1h', prep:false },
-  { time:'18:55', title:'PREP', sub:'Prepare for 19:00 candle close', type:'prep', duration:'', prep:true },
-  { time:'19:00', title:'◈ Trade Check #4 — 19:00 Candle', sub:'Evening review, set overnight orders if applicable', type:'t-trade', duration:'15m', prep:false },
-  { time:'19:15', title:'Primary Hobby', sub:'Walk, photography, sport — extended window', type:'t-life', duration:'1h 15m', prep:false },
-  { time:'20:30', title:'Chill / Social / Light Activities', sub:'TV, calls, reading, casual screen time — decompress fully', type:'t-life', duration:'2h', prep:false },
-  { time:'22:55', title:'PREP', sub:'Prepare for 23:00 candle close', type:'prep', duration:'', prep:true },
-  { time:'23:00', title:'◈ Trade Check #5 — 23:00 Candle (Final)', sub:'Final check, log results, write closing trade journal entry', type:'t-trade', duration:'15m', prep:false },
-  { time:'23:15', title:'Wind Down', sub:'No screens, dim lights, reading or stretching — let the mind settle', type:'t-admin', duration:'1h', prep:false },
-  { time:'00:15', title:'Sleep', sub:'Core rest — ~7h 45m overnight', type:'t-sleep', duration:'~7h 45m', prep:false },
+const MONWED_TEMPLATE = [
+  { time:'05:00', title:'Wake Up + Freshen Up', sub:'', type:'t-admin', duration:'15m', prep:false, color:'#185FA5' },
+  { time:'05:15', title:'Morning Workout', sub:'Use your workout app', type:'t-move', duration:'45m', prep:false, color:'#3B6D11' },
+  { time:'05:55', title:'PREP', sub:'Prepare for 06:00 candle close', type:'prep', duration:'', prep:true },
+  { time:'06:00', title:'◈ Trade Check — 06:00 Candle', sub:'Trade if setup is there; quick and disciplined', type:'t-trade', duration:'30m', prep:false, color:'#BA7517' },
+  { time:'06:30', title:'French Study', sub:'Anki vocab + Language Transfer audio', type:'t-study', duration:'30m', prep:false, color:'#533AB7' },
+  { time:'07:00', title:'Shower + Breakfast + Commute Prep', sub:'', type:'t-admin', duration:'1h 30m', prep:false, color:'#185FA5' },
+  { time:'08:30', title:'Leave for Internship', sub:'', type:'t-admin', duration:'30m', prep:false, color:'#888780' },
+  { time:'09:00', title:'SIWES Internship', sub:'10 AM — quick chart check during break', type:'t-admin', duration:'7h', prep:false, color:'#888780' },
+  { time:'16:30', title:'Home — Decompress', sub:'', type:'t-life', duration:'30m', prep:false, color:'#185FA5' },
+  { time:'17:00', title:'Evening Stroll or Bicycle Ride', sub:'No phone, let the mind reset', type:'t-move', duration:'45m', prep:false, color:'#3B6D11' },
+  { time:'17:55', title:'PREP', sub:'Prepare for 18:00 candle close', type:'prep', duration:'', prep:true },
+  { time:'18:00', title:'◈ Trade Check — 18:00 Candle', sub:'', type:'t-trade', duration:'15m', prep:false, color:'#BA7517' },
+  { time:'18:15', title:'Cybersecurity / Network+', sub:'Professor Messer videos + notes', type:'t-study', duration:'1h', prep:false, color:'#993C1D' },
+  { time:'19:15', title:'Dinner + Rest', sub:'', type:'t-meal', duration:'45m', prep:false, color:'#185FA5' },
+  { time:'20:00', title:'Reading + Philosophy', sub:'Emerson, Stoics, build your worldview', type:'t-life', duration:'1h 45m', prep:false, color:'#533AB7' },
+  { time:'21:55', title:'PREP', sub:'Prepare for 22:00 candle close', type:'prep', duration:'', prep:true },
+  { time:'22:00', title:'◈ Trade Check — 22:00 Candle', sub:'', type:'t-trade', duration:'15m', prep:false, color:'#BA7517' },
+  { time:'22:15', title:'Wind Down', sub:'Journal, reflect, prep tomorrow', type:'t-admin', duration:'45m', prep:false, color:'#185FA5' },
+  { time:'23:00', title:'Sleep', sub:'Core rest — ~6h overnight', type:'t-sleep', duration:'~6h', prep:false, color:'#888780' },
 ];
 
-const WEEKEND_TEMPLATE = [
-  { time:'00:15', title:'Sleep', sub:'Weekend rest — aim for a full 7–8 hours', type:'t-sleep', duration:'~7h 45m', prep:false },
-  { time:'08:00', title:'Morning Routine', sub:'Slower wake-up — hygiene, coffee, light journal. Weekend pace.', type:'t-admin', duration:'55m', prep:false },
-  { time:'08:55', title:'PREP', sub:'Prepare for 09:00 candle close', type:'prep', duration:'', prep:true },
-  { time:'09:00', title:'◈ Trade Check #1 — 09:00 Candle (Delayed Review)', sub:'Review the overnight + early candle — no alarm stress on weekends', type:'t-trade', duration:'20m', prep:false },
-  { time:'09:20', title:'Breakfast — Leisurely', sub:'Proper sit-down breakfast, hydrate, read or listen to something', type:'t-meal', duration:'45m', prep:false },
-  { time:'10:05', title:'Free Time / Personal Projects', sub:'Catch up on anything personal — completely unscheduled', type:'t-free', duration:'50m', prep:false },
-  { time:'10:55', title:'PREP', sub:'Prepare for 11:00 candle close', type:'prep', duration:'', prep:true },
-  { time:'11:00', title:'◈ Trade Check #2 — 11:00 Candle', sub:'Weekend check — lighter review, lower session volume expected', type:'t-trade', duration:'15m', prep:false },
-  { time:'11:15', title:'Free Time / Errands', sub:'Shopping, admin, social plans, or simply relax', type:'t-free', duration:'1h 45m', prep:false },
-  { time:'13:00', title:'Lunch + Extended Walk', sub:'Eat well, longer walk — weekend is for recharging', type:'t-meal', duration:'1h 30m', prep:false },
-  { time:'14:30', title:'Hobby / Leisure Block', sub:'Photography, sport, creative work — extended focus on what you enjoy', type:'t-life', duration:'25m', prep:false },
-  { time:'14:55', title:'PREP', sub:'Prepare for 15:00 candle close', type:'prep', duration:'', prep:true },
-  { time:'15:00', title:'◈ Trade Check #3 — 15:00 Candle', sub:'Afternoon check — manage positions, no overtrading on weekends', type:'t-trade', duration:'15m', prep:false },
-  { time:'15:15', title:'Movement / Sport', sub:'Gym, long walk, sports with friends — use the free afternoon', type:'t-move', duration:'1h', prep:false },
-  { time:'16:15', title:'Freshen Up', sub:'Shower, change for the evening', type:'t-admin', duration:'20m', prep:false },
-  { time:'16:35', title:'Social / Free Afternoon', sub:'Friends, family, outings — guard this block heavily on weekends', type:'t-life', duration:'1h 25m', prep:false },
-  { time:'18:00', title:'Dinner', sub:'Weekend dinner — cook something proper or go out', type:'t-meal', duration:'1h', prep:false },
-  { time:'18:55', title:'PREP', sub:'Prepare for 19:00 candle close', type:'prep', duration:'', prep:true },
-  { time:'19:00', title:'◈ Trade Check #4 — 19:00 Candle', sub:'Evening check — brief, then fully switch off', type:'t-trade', duration:'15m', prep:false },
-  { time:'19:15', title:'Evening Leisure', sub:'Social, entertainment, hobbies — full switch-off from charts', type:'t-life', duration:'3h 15m', prep:false },
-  { time:'22:30', title:'Light Wind Down', sub:'Ease into the end of the weekend — earlier than weekdays', type:'t-admin', duration:'25m', prep:false },
-  { time:'22:55', title:'PREP', sub:'Prepare for 23:00 candle close', type:'prep', duration:'', prep:true },
-  { time:'23:00', title:'◈ Trade Check #5 — 23:00 Candle (Final)', sub:'Final check — log, journal, done for the weekend', type:'t-trade', duration:'15m', prep:false },
-  { time:'23:15', title:'Wind Down + Sleep Prep', sub:'No screens, quiet time, earlier sleep target on Sunday', type:'t-admin', duration:'45m', prep:false },
-  { time:'00:00', title:'Sleep', sub:'Weekend rest — full night, carries into morning', type:'t-sleep', duration:'~8h', prep:false },
+const TUETHU_TEMPLATE = [
+  { time:'06:00', title:'Wake Up', sub:'', type:'t-admin', duration:'10m', prep:false, color:'#185FA5' },
+  { time:'06:10', title:'Morning Workout', sub:'Use your workout app', type:'t-move', duration:'45m', prep:false, color:'#3B6D11' },
+  { time:'06:55', title:'PREP', sub:'Prepare for 07:00 candle close', type:'prep', duration:'', prep:true },
+  { time:'07:00', title:'◈ Trade Check — 07:00 Candle', sub:'', type:'t-trade', duration:'15m', prep:false, color:'#BA7517' },
+  { time:'07:15', title:'Shower + Breakfast', sub:'', type:'t-admin', duration:'45m', prep:false, color:'#185FA5' },
+  { time:'08:00', title:'French Study', sub:'Anki + Language Transfer + grammar practice', type:'t-study', duration:'1h', prep:false, color:'#533AB7' },
+  { time:'09:00', title:'Cybersecurity / Network+', sub:'Deep work, no distractions', type:'t-study', duration:'1h 45m', prep:false, color:'#993C1D' },
+  { time:'10:45', title:'PREP', sub:'Prepare for 11:00 candle close', type:'prep', duration:'', prep:true },
+  { time:'11:00', title:'◈ Trade Check — 11:00 Candle', sub:'', type:'t-trade', duration:'15m', prep:false, color:'#BA7517' },
+  { time:'11:15', title:'Reading + Philosophy', sub:'Emerson, Marcus Aurelius, Montaigne', type:'t-life', duration:'1h 15m', prep:false, color:'#533AB7' },
+  { time:'12:30', title:'Lunch + Rest', sub:'', type:'t-meal', duration:'2h', prep:false, color:'#185FA5' },
+  { time:'14:45', title:'PREP', sub:'Prepare for 15:00 candle close', type:'prep', duration:'', prep:true },
+  { time:'15:00', title:'◈ Trade Check — 15:00 Candle', sub:'', type:'t-trade', duration:'15m', prep:false, color:'#BA7517' },
+  { time:'15:15', title:'Free Time / Personal Projects', sub:'', type:'t-free', duration:'1h 15m', prep:false, color:'#888780' },
+  { time:'16:30', title:'Evening Stroll or Bicycle Ride', sub:'Protect this — it\'s your daily reset', type:'t-move', duration:'45m', prep:false, color:'#3B6D11' },
+  { time:'17:30', title:'Dinner', sub:'', type:'t-meal', duration:'1h 15m', prep:false, color:'#185FA5' },
+  { time:'18:45', title:'PREP', sub:'Prepare for 19:00 candle close', type:'prep', duration:'', prep:true },
+  { time:'19:00', title:'◈ Trade Check — 19:00 Candle', sub:'', type:'t-trade', duration:'15m', prep:false, color:'#BA7517' },
+  { time:'19:15', title:'Cybersecurity — Practice Questions / Anki', sub:'Lighter review session', type:'t-study', duration:'45m', prep:false, color:'#993C1D' },
+  { time:'20:00', title:'French Review or Extra Reading', sub:'', type:'t-study', duration:'1h 30m', prep:false, color:'#533AB7' },
+  { time:'21:30', title:'Wind Down', sub:'Journal, reflect', type:'t-admin', duration:'1h', prep:false, color:'#185FA5' },
+  { time:'22:45', title:'PREP', sub:'Prepare for 23:00 candle close', type:'prep', duration:'', prep:true },
+  { time:'23:00', title:'◈ Trade Check — 23:00 Candle', sub:'', type:'t-trade', duration:'15m', prep:false, color:'#BA7517' },
+  { time:'23:30', title:'Sleep', sub:'Core rest — ~6h 30m overnight', type:'t-sleep', duration:'~6h 30m', prep:false, color:'#888780' },
+];
+
+const FRIDAY_TEMPLATE = [
+  { time:'05:00', title:'Wake Up + Freshen Up', sub:'', type:'t-admin', duration:'15m', prep:false, color:'#185FA5' },
+  { time:'05:15', title:'Morning Workout', sub:'Use your workout app', type:'t-move', duration:'45m', prep:false, color:'#3B6D11' },
+  { time:'05:55', title:'PREP', sub:'Prepare for 06:00 candle close', type:'prep', duration:'', prep:true },
+  { time:'06:00', title:'◈ Trade Check — 06:00 Candle', sub:'Trade if setup is there; quick and disciplined', type:'t-trade', duration:'30m', prep:false, color:'#BA7517' },
+  { time:'06:30', title:'French Study', sub:'Anki vocab + Language Transfer audio', type:'t-study', duration:'30m', prep:false, color:'#533AB7' },
+  { time:'07:00', title:'Shower + Breakfast + Commute Prep', sub:'', type:'t-admin', duration:'1h 30m', prep:false, color:'#185FA5' },
+  { time:'08:30', title:'Leave for Internship', sub:'', type:'t-admin', duration:'30m', prep:false, color:'#888780' },
+  { time:'09:00', title:'SIWES Internship', sub:'10 AM — quick chart check during break', type:'t-admin', duration:'7h', prep:false, color:'#888780' },
+  { time:'16:30', title:'Home — Decompress', sub:'End of the work week — enjoy it', type:'t-life', duration:'30m', prep:false, color:'#185FA5' },
+  { time:'17:00', title:'Evening Stroll or Bicycle Ride', sub:'End of the work week — enjoy it', type:'t-move', duration:'45m', prep:false, color:'#3B6D11' },
+  { time:'17:55', title:'PREP', sub:'Prepare for 18:00 candle close', type:'prep', duration:'', prep:true },
+  { time:'18:00', title:'◈ Trade Check — 18:00 Candle', sub:'', type:'t-trade', duration:'15m', prep:false, color:'#BA7517' },
+  { time:'18:15', title:'Cybersecurity / Network+', sub:'Professor Messer videos + notes', type:'t-study', duration:'1h', prep:false, color:'#993C1D' },
+  { time:'19:15', title:'Dinner + Rest', sub:'', type:'t-meal', duration:'45m', prep:false, color:'#185FA5' },
+  { time:'20:00', title:'Reading + Philosophy', sub:'Emerson, Stoics, build your worldview', type:'t-life', duration:'1h 45m', prep:false, color:'#533AB7' },
+  { time:'21:55', title:'PREP', sub:'Prepare for 22:00 candle close', type:'prep', duration:'', prep:true },
+  { time:'22:00', title:'◈ Trade Check — 22:00 Candle (Week Close)', sub:'Last trade opportunity until Sunday evening', type:'t-trade', duration:'15m', prep:false, color:'#BA7517' },
+  { time:'22:15', title:'Wind Down', sub:'Journal the week, reflect', type:'t-admin', duration:'45m', prep:false, color:'#185FA5' },
+  { time:'23:00', title:'Sleep', sub:'Core rest — ~6h overnight', type:'t-sleep', duration:'~6h', prep:false, color:'#888780' },
+];
+
+const SATURDAY_TEMPLATE = [
+  { time:'06:00', title:'Wake Up', sub:'', type:'t-admin', duration:'10m', prep:false, color:'#185FA5' },
+  { time:'06:10', title:'Morning Workout', sub:'Use your workout app', type:'t-move', duration:'50m', prep:false, color:'#3B6D11' },
+  { time:'07:00', title:'Shower + Breakfast', sub:'No chart check — market is closed all weekend', type:'t-admin', duration:'1h', prep:false, color:'#185FA5' },
+  { time:'08:00', title:'Cybersecurity / Network+', sub:'Morning deep work before laundry', type:'t-study', duration:'1h', prep:false, color:'#993C1D' },
+  { time:'09:00', title:'Laundry', sub:'Language Transfer French audio the whole time — biggest passive French session of the week', type:'t-admin', duration:'3h', prep:false, color:'#185FA5' },
+  { time:'12:00', title:'Hang Clothes + Tidy', sub:'', type:'t-admin', duration:'30m', prep:false, color:'#185FA5' },
+  { time:'12:30', title:'Lunch + Proper Rest', sub:'', type:'t-meal', duration:'1h 30m', prep:false, color:'#185FA5' },
+  { time:'14:00', title:'Reading + Philosophy', sub:'Leisurely, no pressure, no interruptions', type:'t-life', duration:'2h', prep:false, color:'#533AB7' },
+  { time:'16:00', title:'Free Time / Social / Rest', sub:'', type:'t-free', duration:'1h', prep:false, color:'#888780' },
+  { time:'17:00', title:'Evening Stroll or Bicycle Ride', sub:'', type:'t-move', duration:'45m', prep:false, color:'#3B6D11' },
+  { time:'18:00', title:'Dinner', sub:'', type:'t-meal', duration:'1h', prep:false, color:'#185FA5' },
+  { time:'19:00', title:'Light French Review or Free Reading', sub:'', type:'t-study', duration:'2h', prep:false, color:'#533AB7' },
+  { time:'21:00', title:'Wind Down', sub:'No heavy study', type:'t-admin', duration:'2h', prep:false, color:'#185FA5' },
+  { time:'23:00', title:'Sleep', sub:'Weekend rest — ~7h overnight', type:'t-sleep', duration:'~7h', prep:false, color:'#888780' },
+];
+
+const SUNDAY_TEMPLATE = [
+  { time:'07:00', title:'Wake Up', sub:'Rest day, no rush', type:'t-admin', duration:'15m', prep:false, color:'#185FA5' },
+  { time:'07:15', title:'Morning Workout', sub:'', type:'t-move', duration:'45m', prep:false, color:'#3B6D11' },
+  { time:'08:00', title:'Shower + Breakfast', sub:'Settle in', type:'t-admin', duration:'1h', prep:false, color:'#185FA5' },
+  { time:'09:00', title:'Weekly Market Analysis', sub:'Review weekly candles, mark key levels, set bias. No trades — analysis only.', type:'t-trade', duration:'2h', prep:false, color:'#BA7517' },
+  { time:'11:00', title:'French Study', sub:'Conversational practice, review the week\'s material', type:'t-study', duration:'1h', prep:false, color:'#533AB7' },
+  { time:'12:00', title:'Lunch + Long Rest', sub:'', type:'t-meal', duration:'2h', prep:false, color:'#185FA5' },
+  { time:'14:00', title:'Reading + Philosophy', sub:'Sunday anchor — go deep, no rush, no interruptions', type:'t-life', duration:'2h', prep:false, color:'#533AB7' },
+  { time:'16:00', title:'Free Time', sub:'Rest, socialize, recharge', type:'t-free', duration:'1h 30m', prep:false, color:'#888780' },
+  { time:'17:30', title:'Evening Stroll or Bicycle Ride', sub:'', type:'t-move', duration:'45m', prep:false, color:'#3B6D11' },
+  { time:'18:30', title:'Dinner', sub:'', type:'t-meal', duration:'1h', prep:false, color:'#185FA5' },
+  { time:'19:30', title:'Weekly Review Journal', sub:'Trades, French, Network+ progress. What to improve?', type:'t-admin', duration:'30m', prep:false, color:'#185FA5' },
+  { time:'20:00', title:'Prep for Monday', sub:'Clothes, bag, mindset', type:'t-admin', duration:'1h', prep:false, color:'#185FA5' },
+  { time:'21:00', title:'Wind Down', sub:'Early night before internship week', type:'t-admin', duration:'45m', prep:false, color:'#185FA5' },
+  { time:'21:55', title:'PREP', sub:'Market reopens at 22:00', type:'prep', duration:'', prep:true },
+  { time:'22:00', title:'◈ Market Opens — 22:00 Candle', sub:'Quick check, set alerts, ready for Monday', type:'t-trade', duration:'15m', prep:false, color:'#BA7517' },
+  { time:'22:15', title:'Sleep', sub:'Early start tomorrow — full night\'s rest', type:'t-sleep', duration:'~8h 45m', prep:false, color:'#888780' },
 ];
 
 // ─────────────────────────────────────────────────────
@@ -1008,7 +1059,12 @@ const undoStack = {}; // { [dayIndex]: blockArray } — one undo level per day
 const clone = obj => JSON.parse(JSON.stringify(obj));
 
 function getTemplate(i) {
-  return clone(WEEKEND_IDS.includes(i) ? WEEKEND_TEMPLATE : WEEKDAY_TEMPLATE);
+  // 0=Mon, 1=Tue, 2=Wed, 3=Thu, 4=Fri, 5=Sat, 6=Sun
+  if (i === 5) return clone(SATURDAY_TEMPLATE);
+  if (i === 6) return clone(SUNDAY_TEMPLATE);
+  if (i === 4) return clone(FRIDAY_TEMPLATE);
+  if (i === 1 || i === 3) return clone(TUETHU_TEMPLATE);
+  return clone(MONWED_TEMPLATE); // Mon (0) and Wed (2)
 }
 
 // ─────────────────────────────────────────────────────
