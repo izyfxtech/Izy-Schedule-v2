@@ -1,6 +1,6 @@
-const CACHE_NAME = 'izy-schedule-v3';
-const FONTS_CACHE = 'izy-fonts-v1';
-const BASE = '/Izy-Schedule-v2';
+const CACHE_NAME = 'iz-schedule-v1';
+const FONTS_CACHE = 'iz-fonts-v1';
+const BASE = '/IZ-Schedule';
 
 const PRECACHE_ASSETS = [
   `${BASE}/`,
@@ -104,12 +104,12 @@ self.addEventListener('fetch', event => {
 
 // ── Push notifications ──
 self.addEventListener('push', event => {
-  const data = event.data ? event.data.json() : { title: 'IZY', body: 'Schedule reminder' };
-  self.registration.showNotification(data.title || 'IZY', {
+  const data = event.data ? event.data.json() : { title: 'IZ', body: 'Schedule reminder' };
+  self.registration.showNotification(data.title || 'IZ', {
     body: data.body || '',
     icon: `${BASE}/icons/icon-192.png`,
     badge: `${BASE}/icons/icon-192.png`,
     vibrate: [200, 100, 200],
-    tag: 'izy-reminder',
+    tag: 'iz-reminder',
   });
 });
