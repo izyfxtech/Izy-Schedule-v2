@@ -1527,8 +1527,8 @@ const SUN_TEMPLATE = [
 // ─────────────────────────────────────────────────────
 const todayIdx = () => {
   const now = new Date();
-  // The schedule day runs 06:00 → 05:59 next calendar day.
-  // Before 6 AM we are still in yesterday's schedule (overnight Sleep block),
+  // The schedule day runs 05:00 → 04:59 next calendar day.
+  // Before 5 AM we are still in yesterday's schedule (overnight Sleep block),
   // so treat as the previous calendar day.
   let d;
   if (now.getHours() < 5) {
@@ -1608,10 +1608,6 @@ function validateRawData(data) {
     if (!Array.isArray(data[i])) return false;
     for (const b of data[i]) {
       if (!validateBlock(b)) return false;
-      if (b.type === 't-sleep') {
-        const h = parseInt((b.time || '').split(':')[0], 10);
-        if (!isNaN(h) && h >= 0 && h < 6) return false;
-      }
     }
   }
   return true;
@@ -2196,11 +2192,13 @@ function confirmImport() {
     localStorage.setItem(VERSION_KEY, APP_VERSION);
   } catch(e) {
     showToast('Imported (storage unavailable)');
-    renderTabs(); renderSchedule();
+    renderTabs(); renderSchedule(); syncUndoButton(); syncSaveDefaultButton();
     closeImportConfirm(); return;
   }
   renderTabs();
   renderSchedule();
+  syncUndoButton();
+  syncSaveDefaultButton();
   showToast('Schedule imported ✓');
   closeImportConfirm();
   pushToCloud();
@@ -2229,6 +2227,7 @@ function selectSwatch(color) {
 }
 
 function hexToRgb(hex) {
+  if (!hex || !/^#[0-9a-f]{6}$/i.test(hex)) return { r: 128, g: 128, b: 128 };
   const r = parseInt(hex.slice(1,3), 16);
   const g = parseInt(hex.slice(3,5), 16);
   const b = parseInt(hex.slice(5,7), 16);
@@ -2466,13 +2465,21 @@ function deleteBlock() {
 }
 
 function undoLastAction() {
-  if (!undoStack[currentDay]) { showToast('Nothing to undo'); return; }
-  weekData[currentDay] = undoStack[currentDay];
-  delete undoStack[currentDay];
+  // Use the day that was active when the action happened (captured in _toastUndoDay),
+  // falling back to currentDay for toolbar-button clicks where no toast day is set.
+  const targetDay = (_toastUndoDay !== null) ? _toastUndoDay : currentDay;
+  if (!undoStack[targetDay]) { showToast('Nothing to undo'); return; }
+  weekData[targetDay] = undoStack[targetDay];
+  delete undoStack[targetDay];
+  _toastUndoDay = null;
   cloudSave();
+  // If the undo was for a different day, switch to it so the user sees the change.
+  if (targetDay !== currentDay) {
+    currentDay = targetDay;
+    renderTabs();
+  }
   renderSchedule();
   syncUndoButton();
-  // Hide toast undo button since we've just used it
   document.getElementById('toast').classList.remove('show');
   showToast('Undo ✓');
 }
@@ -2497,7 +2504,10 @@ function loadUserDefaults() {
 
 function saveUserDefaults(defaults) {
   try { localStorage.setItem(USER_DEFAULT_KEY, JSON.stringify(defaults)); } catch(e) {}
-  cloudSave();
+  // Push only the user_defaults field rather than re-serialising all of weekData
+  if (!_sbUser || !_sb) return;
+  clearTimeout(_pushTimer);
+  _pushTimer = setTimeout(pushToCloud, 600);
 }
 
 function getUserDefault(dayIdx) {
@@ -2570,11 +2580,16 @@ document.getElementById('resetOverlay').addEventListener('click', function(e) {
 // ─────────────────────────────────────────────────────
 // TOAST
 // ─────────────────────────────────────────────────────
+let _toastUndoDay = null; // day index captured at the moment the undo-toast was shown
+
 function showToast(msg, withUndo = false) {
   const t = document.getElementById('toast');
   document.getElementById('toastMsg').textContent = msg;
   const undoBtn = document.getElementById('toastUndoBtn');
   undoBtn.style.display = withUndo ? '' : 'none';
+  // Capture the current day so Undo always targets the day the action happened on,
+  // even if the user switches tabs before the toast times out.
+  _toastUndoDay = withUndo ? currentDay : null;
   t.classList.add('show');
   if (toastTimer) clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), withUndo ? 5000 : 2500);
@@ -2592,9 +2607,6 @@ document.addEventListener('keydown', e => {
   }
 });
 
-// ─────────────────────────────────────────────────────
-// INIT
-// ─────────────────────────────────────────────────────
 // ─────────────────────────────────────────────────────
 // THEMES
 // ─────────────────────────────────────────────────────
@@ -2657,7 +2669,6 @@ let _lastRenderedDay = todayIdx();
 // Store interval refs for potential cleanup
 clockInterval = setInterval(() => {
   updateClock();
-  updateNowBanner();
   syncNowBadge();
   // Detect schedule-day rollover (fires at 06:00, not midnight)
   const currentTodayIdx = todayIdx();
@@ -2667,6 +2678,9 @@ clockInterval = setInterval(() => {
     _lastRenderedDay = currentTodayIdx;
     renderTabs();
     renderSchedule();
+  } else {
+    // Keep the Now banner ticking on today's tab without a full re-render
+    updateNowBanner();
   }
 }, 1000);
 
@@ -2719,9 +2733,9 @@ function scheduleNotifications() {
     const msUntil = minsUntilStart * 60 * 1000 - rawS * 1000; // account for elapsed seconds
     if (msUntil <= 0) return; // block has already started or passed
 
+    const icon = '/Izy-Schedule-v2/icons/icon-192.png';
     // Notify exactly at block start
     const id = setTimeout(() => {
-      const icon = 'icons/icon-192.png';
       if (block.prep) {
         showNotification(
           '◈ Candle Close Approaching',
@@ -2746,7 +2760,7 @@ function scheduleNotifications() {
         showNotification(
           `⚡ Trade Check in 2 mins`,
           `${block.title} starts at ${fmt12(block.time)}`,
-          'icons/icon-192.png'
+          '/Izy-Schedule-v2/icons/icon-192.png'
         );
       }, msUntil - 2 * 60 * 1000);
       _notifTimers.push(warnId);
