@@ -14,6 +14,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
 /* ═══════════════════════════════════════════════════════
    AXIS 1: BRIGHTNESS — controls surfaces, text, borders
@@ -855,6 +856,108 @@ body {
 .brightness-btn:not(:last-child) { border-right: 1px solid var(--border2); }
 .brightness-btn:hover { background: var(--surface2); color: var(--text); }
 .brightness-btn.active { background: var(--surface2); color: var(--text); }
+/* ── AUTH MODAL ── */
+.auth-overlay {
+  display:none; position:fixed; inset:0; z-index:400;
+  background:rgba(0,0,0,0.8); align-items:center; justify-content:center;
+}
+.auth-overlay.open { display:flex; }
+.auth-box {
+  background:var(--surface2); border:1px solid var(--border2); border-radius:14px;
+  padding:32px; width:360px; max-width:95vw; animation:slideUp 0.2s ease;
+}
+.auth-logo {
+  font-family:'Bebas Neue',sans-serif; font-size:40px; letter-spacing:5px;
+  color:var(--trade); text-align:center; line-height:1; margin-bottom:4px;
+}
+.auth-sub {
+  font-family:'DM Mono',monospace; font-size:9px; letter-spacing:2px;
+  text-transform:uppercase; color:var(--muted); text-align:center; margin-bottom:26px;
+}
+.auth-tabs {
+  display:flex; border:1px solid var(--border2); border-radius:6px;
+  overflow:hidden; margin-bottom:20px;
+}
+.auth-tab {
+  flex:1; padding:8px; font-family:'DM Mono',monospace; font-size:10px;
+  letter-spacing:1px; text-transform:uppercase; background:var(--surface);
+  color:var(--muted); border:none; cursor:pointer; transition:all 0.15s;
+}
+.auth-tab:first-child { border-right:1px solid var(--border2); }
+.auth-tab.active { background:var(--surface2); color:var(--text); }
+.auth-field { margin-bottom:13px; }
+.auth-field label {
+  display:block; font-family:'DM Mono',monospace; font-size:10px;
+  text-transform:uppercase; letter-spacing:1.5px; color:var(--muted); margin-bottom:5px;
+}
+.auth-field input {
+  width:100%; background:var(--surface); border:1px solid var(--border2);
+  border-radius:6px; color:var(--text); font-family:'DM Sans',sans-serif;
+  font-size:13px; padding:9px 12px; outline:none; transition:border-color 0.15s;
+  user-select:text; -webkit-user-select:text;
+}
+.auth-field input:focus { border-color:var(--trade); }
+.auth-btn {
+  width:100%; padding:11px; margin-top:4px;
+  background:var(--trade-bg); border:1px solid var(--trade-border); border-radius:6px;
+  color:var(--trade); font-family:'DM Mono',monospace; font-size:11px;
+  letter-spacing:1px; text-transform:uppercase; cursor:pointer; transition:background 0.15s;
+}
+.auth-btn:hover { background:var(--trade-border); }
+.auth-btn:disabled { opacity:0.5; cursor:not-allowed; }
+.auth-msg {
+  display:none; margin-top:11px; padding:8px 11px; border-radius:5px;
+  font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.3px; line-height:1.5;
+  text-align:center;
+}
+.auth-msg.show { display:block; }
+.auth-msg.error {
+  background:color-mix(in srgb,var(--danger) 10%,transparent);
+  border:1px solid color-mix(in srgb,var(--danger) 35%,transparent);
+  color:var(--danger);
+}
+.auth-msg.ok {
+  background:var(--trade-bg); border:1px solid var(--trade-border); color:var(--trade);
+}
+.auth-link {
+  display:block; text-align:center; margin-top:13px;
+  font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.5px;
+  color:var(--muted);
+}
+.auth-link button {
+  background:none; border:none; color:var(--trade); cursor:pointer;
+  font:inherit; letter-spacing:inherit; padding:0; text-decoration:underline;
+}
+
+/* ── USER PILL ── */
+.user-pill {
+  display:flex; align-items:center; gap:7px; margin-top:4px;
+  font-family:'DM Mono',monospace; font-size:10px; letter-spacing:1px;
+  text-transform:uppercase; color:var(--muted);
+}
+.sync-dot {
+  width:7px; height:7px; border-radius:50%; background:var(--trade); flex-shrink:0;
+}
+.sync-dot.offline  { background:var(--dim); }
+.sync-dot.syncing  { animation:glow 1s ease-in-out infinite; }
+.sync-dot.error    { background:var(--danger); }
+.user-email {
+  max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.user-action-btn {
+  background:none; border:1px solid var(--border2); border-radius:4px;
+  color:var(--dim); cursor:pointer; font-family:'DM Mono',monospace;
+  font-size:9px; letter-spacing:1px; text-transform:uppercase;
+  padding:2px 7px; transition:all 0.15s;
+}
+.user-action-btn:hover { color:var(--text); border-color:var(--muted); }
+.signin-btn {
+  background:var(--trade-bg); border:1px solid var(--trade-border); border-radius:5px;
+  color:var(--trade); cursor:pointer; font-family:'DM Mono',monospace;
+  font-size:10px; letter-spacing:1px; text-transform:uppercase;
+  padding:4px 11px; transition:background 0.15s; margin-top:4px;
+}
+.signin-btn:hover { background:var(--trade-border); }
 </style>
 </head>
 <body>
@@ -873,6 +976,7 @@ body {
       <span class="badge badge-green">3–5× Daily Trade Checks</span>
       <span class="badge badge-yellow">Click any block to edit</span>
     </div>
+    <div id="userPill"><button class="signin-btn" onclick="openAuth()">Sign In</button></div>
     <div class="theme-picker" id="themePicker">
       <span class="theme-picker-label">Accent</span>
       <button class="theme-swatch" data-accent="espresso" title="Espresso" onclick="applyAccent('espresso')">
@@ -954,6 +1058,58 @@ body {
   <div class="schedule" id="scheduleBody"></div>
 
 </div>
+</div>
+
+<!-- AUTH MODAL -->
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-box">
+    <div class="auth-logo">IZ</div>
+    <div class="auth-sub">Weekly Schedule</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tabIn"  onclick="showAuthPanel('in')">Sign In</button>
+      <button class="auth-tab"        id="tabUp"  onclick="showAuthPanel('up')">Sign Up</button>
+    </div>
+
+    <!-- Sign in -->
+    <div id="panelIn">
+      <div class="auth-field"><label>Email</label>
+        <input type="email" id="inEmail" placeholder="you@example.com" autocomplete="email"/>
+      </div>
+      <div class="auth-field"><label>Password</label>
+        <input type="password" id="inPass" placeholder="••••••••" autocomplete="current-password"
+               onkeydown="if(event.key==='Enter')doSignIn()"/>
+      </div>
+      <button class="auth-btn" id="inBtn" onclick="doSignIn()">Sign In</button>
+      <div class="auth-msg error" id="inErr"></div>
+      <div class="auth-link"><button onclick="showAuthPanel('reset')">Forgot password?</button></div>
+    </div>
+
+    <!-- Sign up -->
+    <div id="panelUp" style="display:none">
+      <div class="auth-field"><label>Email</label>
+        <input type="email" id="upEmail" placeholder="you@example.com" autocomplete="email"/>
+      </div>
+      <div class="auth-field"><label>Password</label>
+        <input type="password" id="upPass" placeholder="At least 6 characters" autocomplete="new-password"
+               onkeydown="if(event.key==='Enter')doSignUp()"/>
+      </div>
+      <button class="auth-btn" id="upBtn" onclick="doSignUp()">Create Account</button>
+      <div class="auth-msg error" id="upErr"></div>
+      <div class="auth-msg ok"    id="upOk"></div>
+    </div>
+
+    <!-- Password reset -->
+    <div id="panelReset" style="display:none">
+      <div class="auth-field"><label>Email</label>
+        <input type="email" id="resetEmail" placeholder="you@example.com" autocomplete="email"
+               onkeydown="if(event.key==='Enter')doReset()"/>
+      </div>
+      <button class="auth-btn" onclick="doReset()">Send Reset Email</button>
+      <div class="auth-msg error" id="resetErr"></div>
+      <div class="auth-msg ok"    id="resetOk"></div>
+      <div class="auth-link"><button onclick="showAuthPanel('in')">← Back to sign in</button></div>
+    </div>
+  </div>
 </div>
 
 <!-- FOOTER -->
@@ -1108,8 +1264,94 @@ body {
 // ─────────────────────────────────────────────────────
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 const WEEKEND_IDS = [5, 6];
-const STORAGE_KEY = 'iz-weekly-schedule-v1';
+const STORAGE_KEY      = 'iz-weekly-schedule-v1';
 const USER_DEFAULT_KEY = 'iz-user-defaults-v1';
+
+// ─── Supabase ─────────────────────────────────────────
+// Replace these two values with your own from:
+// supabase.com → your project → Settings → API
+const SUPABASE_URL  = 'https://jjbmyljbysdajqdexqcf.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpqYm15bGpieXNkYWpxZGV4cWNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMDI2ODIsImV4cCI6MjA4OTc3ODY4Mn0.fuz17JWQye3bXEF0PhvakKW9hf0ugsvIwAnb15-PCUE';
+const _sb = (typeof supabase !== 'undefined')
+  ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON)
+  : null;
+
+let _sbUser   = null;   // currently signed-in user
+let _pushTimer = null;  // debounce handle for cloud push
+
+// Write weekData to localStorage, then debounce a cloud push
+function cloudSave() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(weekData)); } catch(e) {}
+  if (!_sbUser || !_sb) return;
+  clearTimeout(_pushTimer);
+  _pushTimer = setTimeout(pushToCloud, 600);
+}
+
+async function pushToCloud() {
+  if (!_sbUser || !_sb) return;
+  setSyncState('syncing');
+  try {
+    const { error } = await _sb.from('schedules').upsert({
+      user_id:    _sbUser.id,
+      week_data:  weekData,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id' });
+    setSyncState(error ? 'error' : 'ok');
+    if (error) console.warn('[IZ] Push failed:', error.message);
+  } catch(e) {
+    setSyncState('error');
+  }
+}
+
+async function pullFromCloud() {
+  if (!_sbUser || !_sb) return;
+  setSyncState('syncing');
+  try {
+    const { data, error } = await _sb
+      .from('schedules')
+      .select('week_data')
+      .eq('user_id', _sbUser.id)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      // PGRST116 = no rows — first-time user, push local data up instead
+      console.warn('[IZ] Pull failed:', error.message);
+      setSyncState('error');
+      return;
+    }
+
+    if (!data) {
+      // No cloud data yet — push what we have
+      pushToCloud();
+      return;
+    }
+
+    // Cloud data exists — merge (cloud wins, fill missing days from local)
+    const cloudData = data.week_data || {};
+    for (let i = 0; i < 7; i++) {
+      if (Array.isArray(cloudData[i]) && cloudData[i].length > 0) {
+        weekData[i] = cloudData[i];
+      }
+    }
+    normalizeMidnightBlocks();
+    for (let i = 0; i < 7; i++) {
+      if (!weekData[i] || !Array.isArray(weekData[i]) || weekData[i].length === 0) {
+        weekData[i] = getTemplate(i);
+      }
+      weekData[i].sort((a, b) => sortKey(a) - sortKey(b));
+    }
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(weekData)); } catch(e) {}
+    renderTabs();
+    renderSchedule();
+    syncUndoButton();
+    syncSaveDefaultButton();
+    setSyncState('ok');
+    showToast('Schedule loaded from cloud ✓');
+  } catch(e) {
+    setSyncState('error');
+    console.warn('[IZ] Pull error:', e);
+  }
+}
 
 // ─── App versioning ───────────────────────────────────
 // Format: 'MAJOR.MINOR.PATCH'
@@ -1924,7 +2166,7 @@ function confirmImport() {
   }
   normalizeMidnightBlocks();
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(weekData));
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(weekData)); } catch(e) {}
     // Stamp the current app version so the version check on next load doesn't
     // re-evaluate (and potentially reset) the data we just imported
     localStorage.setItem(VERSION_KEY, APP_VERSION);
@@ -1937,6 +2179,7 @@ function confirmImport() {
   renderSchedule();
   showToast('Schedule imported ✓');
   closeImportConfirm();
+  pushToCloud();
 }
 
 document.getElementById('importOverlay').addEventListener('click', function(e) {
@@ -2172,7 +2415,7 @@ function commitBlock(block, targetDay, autoRouted = false) {
   weekData[targetDay].sort((a, b) => sortKey(a) - sortKey(b));
   if (crossDay) weekData[currentDay].sort((a, b) => sortKey(a) - sortKey(b));
 
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(weekData)); } catch(e) {}
+  cloudSave();
   closeModal();
   renderSchedule();
   syncUndoButton();
@@ -2191,7 +2434,7 @@ function deleteBlock() {
   if (editingIndex === null) return;
   undoStack[currentDay] = clone(weekData[currentDay]);
   weekData[currentDay].splice(editingIndex, 1);
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(weekData)); } catch(e) {}
+  cloudSave();
   closeModal();
   renderSchedule();
   syncUndoButton();
@@ -2202,7 +2445,7 @@ function undoLastAction() {
   if (!undoStack[currentDay]) { showToast('Nothing to undo'); return; }
   weekData[currentDay] = undoStack[currentDay];
   delete undoStack[currentDay];
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(weekData)); } catch(e) {}
+  cloudSave();
   renderSchedule();
   syncUndoButton();
   // Hide toast undo button since we've just used it
@@ -2287,7 +2530,7 @@ function confirmReset() {
   undoStack[currentDay] = clone(weekData[currentDay]);
   const userDefault = getUserDefault(currentDay);
   weekData[currentDay] = userDefault ? clone(userDefault) : getTemplate(currentDay);
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(weekData)); } catch(e) {}
+  cloudSave();
   closeResetConfirm();
   renderSchedule();
   syncUndoButton();
@@ -2622,12 +2865,159 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+
 // Init notif button state and version display on load
 window.addEventListener('DOMContentLoaded', () => {
   syncNotifButton();
   const v = document.getElementById('footerVersion');
   if (v) v.textContent = `IZ v${APP_VERSION}`;
 });
+
+// ─────────────────────────────────────────────────────
+// AUTH + CLOUD SYNC
+// ─────────────────────────────────────────────────────
+
+// ── Sync dot state ───────────────────────────────────
+function setSyncState(state) {
+  const dot = document.getElementById('syncDot');
+  if (!dot) return;
+  dot.className = 'sync-dot' + (state === 'syncing' ? ' syncing' : state === 'error' ? ' error' : state === 'offline' ? ' offline' : '');
+  dot.title = { syncing:'Syncing…', error:'Sync error', offline:'Offline', ok:'Synced' }[state] || '';
+}
+
+// ── User pill ─────────────────────────────────────────
+function renderUserPill(user) {
+  const el = document.getElementById('userPill');
+  if (!el) return;
+  if (user) {
+    el.innerHTML = `<div class="user-pill">
+      <span class="sync-dot" id="syncDot" title="Synced"></span>
+      <span class="user-email" title="${escHtml(user.email)}">${escHtml(user.email)}</span>
+      <button class="user-action-btn" onclick="doSignOut()">Sign Out</button>
+    </div>`;
+    if (!navigator.onLine) setSyncState('offline');
+  } else {
+    el.innerHTML = `<button class="signin-btn" onclick="openAuth()">Sign In</button>`;
+  }
+}
+
+// ── Auth modal ────────────────────────────────────────
+function openAuth(panel) {
+  showAuthPanel(panel || 'in');
+  document.getElementById('authOverlay').classList.add('open');
+  setTimeout(() => {
+    const el = document.getElementById('inEmail');
+    if (el) el.focus();
+  }, 80);
+}
+
+function closeAuth() {
+  document.getElementById('authOverlay').classList.remove('open');
+  clearAuthMsgs();
+}
+
+document.getElementById('authOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeAuth();
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.getElementById('authOverlay').classList.contains('open')) {
+    closeAuth();
+  }
+});
+
+function showAuthPanel(panel) {
+  document.getElementById('panelIn').style.display    = panel === 'in'    ? '' : 'none';
+  document.getElementById('panelUp').style.display    = panel === 'up'    ? '' : 'none';
+  document.getElementById('panelReset').style.display = panel === 'reset' ? '' : 'none';
+  const tabIn = document.getElementById('tabIn');
+  const tabUp = document.getElementById('tabUp');
+  if (tabIn) tabIn.classList.toggle('active', panel === 'in');
+  if (tabUp) tabUp.classList.toggle('active', panel === 'up');
+  clearAuthMsgs();
+}
+
+function clearAuthMsgs() {
+  ['inErr','upErr','upOk','resetErr','resetOk'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.textContent = ''; el.classList.remove('show'); }
+  });
+}
+
+function showMsg(id, text, type) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = text;
+  el.className = 'auth-msg ' + type + ' show';
+}
+
+async function doSignIn() {
+  if (!_sb) return;
+  const email = document.getElementById('inEmail').value.trim();
+  const pass  = document.getElementById('inPass').value;
+  if (!email || !pass) { showMsg('inErr','Please enter your email and password.','error'); return; }
+  const btn = document.getElementById('inBtn');
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  const { error } = await _sb.auth.signInWithPassword({ email, password: pass });
+  btn.disabled = false; btn.textContent = 'Sign In';
+  if (error) { showMsg('inErr', error.message, 'error'); return; }
+  closeAuth();
+}
+
+async function doSignUp() {
+  if (!_sb) return;
+  const email = document.getElementById('upEmail').value.trim();
+  const pass  = document.getElementById('upPass').value;
+  if (!email || !pass) { showMsg('upErr','Please enter your email and password.','error'); return; }
+  if (pass.length < 6) { showMsg('upErr','Password must be at least 6 characters.','error'); return; }
+  const btn = document.getElementById('upBtn');
+  btn.disabled = true; btn.textContent = 'Creating…';
+  const { error } = await _sb.auth.signUp({ email, password: pass });
+  btn.disabled = false; btn.textContent = 'Create Account';
+  if (error) { showMsg('upErr', error.message, 'error'); return; }
+  showMsg('upOk', 'Account created — check your email to confirm, then sign in.', 'ok');
+}
+
+async function doReset() {
+  if (!_sb) return;
+  const email = document.getElementById('resetEmail').value.trim();
+  if (!email) { showMsg('resetErr','Please enter your email.','error'); return; }
+  const { error } = await _sb.auth.resetPasswordForEmail(email);
+  if (error) { showMsg('resetErr', error.message, 'error'); return; }
+  showMsg('resetOk', 'Reset email sent — check your inbox.', 'ok');
+}
+
+async function doSignOut() {
+  if (!_sb) return;
+  await _sb.auth.signOut();
+}
+
+// ── Online / offline ──────────────────────────────────
+window.addEventListener('online', () => {
+  if (_sbUser) {
+    setSyncState('syncing');
+    pushToCloud();
+  }
+});
+window.addEventListener('offline', () => setSyncState('offline'));
+
+// ── Auth state changes ────────────────────────────────
+if (_sb) {
+  _sb.auth.onAuthStateChange(async (event, session) => {
+    _sbUser = session?.user ?? null;
+    renderUserPill(_sbUser);
+    if (_sbUser) {
+      await pullFromCloud();
+    }
+  });
+
+  // Restore session on page load
+  _sb.auth.getSession().then(({ data: { session } }) => {
+    _sbUser = session?.user ?? null;
+    renderUserPill(_sbUser);
+    if (_sbUser) pullFromCloud();
+  });
+}
 </script>
 </body>
 </html>
