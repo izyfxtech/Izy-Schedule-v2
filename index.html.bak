@@ -392,35 +392,6 @@ body {
 .btn-danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 35%, transparent); }
 .btn-danger:hover { background: color-mix(in srgb, var(--danger) 10%, transparent); }
 
-/* Apply-to-days dropdown */
-.apply-day-wrap { position: relative; }
-.apply-day-menu {
-  display: none;
-  position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
-  background: var(--surface2);
-  border: 1px solid var(--border2);
-  border-radius: 8px;
-  padding: 4px;
-  min-width: 150px;
-  z-index: 200;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
-}
-.apply-day-menu.open { display: flex; flex-direction: column; gap: 2px; }
-.apply-day-menu button {
-  background: none;
-  border: none;
-  color: var(--text);
-  text-align: left;
-  padding: 7px 12px;
-  border-radius: 6px;
-  font-size: 13px;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.apply-day-menu button:hover { background: var(--trade-bg); color: var(--trade); }
-
 /* Fix G: Undo button — disabled when no action to undo, styled distinctly */
 .btn-undo { color: var(--dim); border-color: var(--border); }
 .btn-undo:not(:disabled):hover { color: var(--text); background: var(--surface2); }
@@ -1081,15 +1052,6 @@ body {
       <div class="toolbar-sep"></div>
       <button class="btn" id="saveDefaultBtn" onclick="saveAsDefault()" title="Save current schedule as the default for this day">Save as Default</button>
       <button class="btn btn-danger" onclick="showResetConfirm()" title="Reset this day to its default template">Reset Day</button>
-      <div class="toolbar-sep"></div>
-      <div class="apply-day-wrap" id="applyDayMenuWrap">
-        <button class="btn" onclick="toggleApplyDayMenu()" title="Copy this day's schedule to other days">Apply to… ▾</button>
-        <div class="apply-day-menu" id="applyDayMenu">
-          <button onclick="applyCurrentDayToWeekdays(); closeApplyDayMenu()">All Weekdays</button>
-          <button onclick="applyCurrentDayToWeekends(); closeApplyDayMenu()">Weekend Days</button>
-          <button onclick="applyCurrentDayToAllDays(); closeApplyDayMenu()">All 7 Days</button>
-        </div>
-      </div>
     </div>
   </div>
 
@@ -1314,185 +1276,104 @@ const _sb = (typeof supabase !== 'undefined')
   ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON)
   : null;
 
-let _sbUser        = null;   // currently signed-in user
-let _pushTimer     = null;   // debounce handle for cloud push
-let _pushInFlight  = false;  // true while a push is awaiting Supabase
-let _pushQueued    = false;  // true if an edit arrived during an in-flight push
-let _lastPushHash  = '';     // hash of last successfully pushed payload
+let _sbUser   = null;   // currently signed-in user
+let _pushTimer = null;  // debounce handle for cloud push
 
-// ── Timestamp helpers (local-edit vs cloud-sync reconciliation) ───────────
-const LAST_LOCAL_EDIT_KEY = 'iz-last-local-edit-v1';
-const LAST_CLOUD_SYNC_KEY = 'iz-last-cloud-sync-v1';
-
-function markLocalEdited() {
-  try { localStorage.setItem(LAST_LOCAL_EDIT_KEY, new Date().toISOString()); } catch(e) {}
-}
-function getLastLocalEdit() {
-  try { return localStorage.getItem(LAST_LOCAL_EDIT_KEY); } catch(e) { return null; }
-}
-function setLastCloudSync(ts) {
-  try { localStorage.setItem(LAST_CLOUD_SYNC_KEY, ts || new Date().toISOString()); } catch(e) {}
-}
-function getLastCloudSync() {
-  try { return localStorage.getItem(LAST_CLOUD_SYNC_KEY); } catch(e) { return null; }
-}
-
-// Write weekData to localStorage, mark as locally edited, then debounce a cloud push
+// Write weekData to localStorage, then debounce a cloud push
 function cloudSave() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(weekData)); } catch(e) {}
-  markLocalEdited();
   if (!_sbUser || !_sb) return;
   clearTimeout(_pushTimer);
-  _pushTimer = setTimeout(queueCloudPush, 600);
-}
-
-// Ensures only one push runs at a time; queues a follow-up if needed
-function queueCloudPush() {
-  if (!_sbUser || !_sb) return;
-  if (_pushInFlight) { _pushQueued = true; return; }
-  pushToCloud();
-}
-
-// Snapshot of what to push — called at push time, not save time
-function buildCloudPayload() {
-  let accent = 'espresso', brightness = 'espresso', userDefaults = {};
-  try { accent       = localStorage.getItem(ACCENT_KEY)     || 'espresso'; } catch(e) {}
-  try { brightness   = localStorage.getItem(BRIGHTNESS_KEY) || 'espresso'; } catch(e) {}
-  try { userDefaults = JSON.parse(localStorage.getItem(USER_DEFAULT_KEY) || '{}'); } catch(e) {}
-  return {
-    user_id:       _sbUser.id,
-    week_data:     clone(weekData),
-    accent,
-    brightness,
-    user_defaults: userDefaults,
-    updated_at:    new Date().toISOString(),
-  };
+  _pushTimer = setTimeout(pushToCloud, 600);
 }
 
 async function pushToCloud() {
   if (!_sbUser || !_sb) return;
-
-  _pushInFlight = true;
-  _pushQueued   = false;
   setSyncState('syncing');
-
-  const payload = buildCloudPayload();
-
-  // Skip if nothing has actually changed since last successful push
-  const payloadHash = JSON.stringify({
-    week_data:     payload.week_data,
-    accent:        payload.accent,
-    brightness:    payload.brightness,
-    user_defaults: payload.user_defaults,
-  });
-  if (payloadHash === _lastPushHash) {
-    _pushInFlight = false;
-    setSyncState('ok');
-    return;
-  }
-
   try {
-    const { error } = await _sb.from('schedules').upsert(payload, { onConflict: 'user_id' });
-    if (error) {
-      console.warn('[IZ] Push failed:', error);
-      showToast(`Sync failed: ${error.message || 'Unknown error'}`);
-      setSyncState('error');
-    } else {
-      _lastPushHash = payloadHash;
-      setLastCloudSync(payload.updated_at);
-      setSyncState('ok');
-    }
+    let accent = 'espresso', brightness = 'espresso';
+    try { accent     = localStorage.getItem(ACCENT_KEY)     || 'espresso'; } catch(e) {}
+    try { brightness = localStorage.getItem(BRIGHTNESS_KEY) || 'espresso'; } catch(e) {}
+    let userDefaults = {};
+    try { userDefaults = JSON.parse(localStorage.getItem(USER_DEFAULT_KEY) || '{}'); } catch(e) {}
+
+    const { error } = await _sb.from('schedules').upsert({
+      user_id:       _sbUser.id,
+      week_data:     weekData,
+      accent,
+      brightness,
+      user_defaults: userDefaults,
+      updated_at:    new Date().toISOString(),
+    }, { onConflict: 'user_id' });
+    setSyncState(error ? 'error' : 'ok');
+    if (error) console.warn('[IZ] Push failed:', error.message);
   } catch(e) {
-    console.warn('[IZ] Push crashed:', e);
     setSyncState('error');
-  } finally {
-    _pushInFlight = false;
-    if (_pushQueued) {
-      _pushQueued = false;
-      pushToCloud();
-    }
   }
 }
 
-// ── Step 1: fetch cloud row (no side-effects) ─────────────────────────────
-async function fetchCloudSchedule() {
-  if (!_sbUser || !_sb) return null;
-  const { data, error } = await _sb
-    .from('schedules')
-    .select('week_data, accent, brightness, user_defaults, updated_at')
-    .eq('user_id', _sbUser.id)
-    .single();
-  if (error && error.code !== 'PGRST116') throw error;
-  return data || null;
-}
-
-// ── Step 2: apply a fetched cloud row to the app ──────────────────────────
-function applyCloudSchedule(data) {
-  if (!data) return;
-  const cloudData = data.week_data || {};
-  for (let i = 0; i < 7; i++) {
-    if (Array.isArray(cloudData[i]) && cloudData[i].length > 0) {
-      weekData[i] = cloudData[i];
-    }
-  }
-  normalizeMidnightBlocks();
-  for (let i = 0; i < 7; i++) {
-    if (!weekData[i] || !Array.isArray(weekData[i]) || weekData[i].length === 0) {
-      weekData[i] = getTemplate(i);
-    }
-    weekData[i].sort((a, b) => sortKey(a) - sortKey(b));
-  }
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(weekData)); } catch(e) {}
-
-  // Apply theme without triggering another cloud save
-  if (data.accent)     applyAccent(data.accent, false);
-  if (data.brightness) applyBrightness(data.brightness, false);
-  if (data.user_defaults && typeof data.user_defaults === 'object') {
-    try { localStorage.setItem(USER_DEFAULT_KEY, JSON.stringify(data.user_defaults)); } catch(e) {}
-  }
-  if (data.updated_at) setLastCloudSync(data.updated_at);
-
-  renderTabs();
-  renderSchedule();
-  syncUndoButton();
-  syncSaveDefaultButton();
-}
-
-// ── Step 3: reconcile on sign-in — local edits win if newer ───────────────
-async function reconcileAfterSignIn() {
+async function pullFromCloud() {
   if (!_sbUser || !_sb) return;
   setSyncState('syncing');
   try {
-    const cloud          = await fetchCloudSchedule();
-    const localEditedAt  = getLastLocalEdit();
-    const lastCloudSync  = getLastCloudSync();
-    const cloudUpdatedAt = cloud?.updated_at || null;
+    const { data, error } = await _sb
+      .from('schedules')
+      .select('week_data, accent, brightness, user_defaults')
+      .eq('user_id', _sbUser.id)
+      .single();
 
-    // True when local data has been edited after the last successful push
-    const localIsUnsynced =
-      !!localEditedAt && (!lastCloudSync || new Date(localEditedAt) > new Date(lastCloudSync));
-
-    if (!cloud) {
-      // No cloud record yet — push whatever we have locally
-      await pushToCloud();
-      showToast('Schedule saved to cloud ✓');
+    if (error && error.code !== 'PGRST116') {
+      console.warn('[IZ] Pull failed:', error.message);
+      setSyncState('error');
       return;
     }
 
-    if (localIsUnsynced && cloudUpdatedAt && new Date(localEditedAt) > new Date(cloudUpdatedAt)) {
-      // Local is newer → push local, don't overwrite with cloud
-      await pushToCloud();
-      showToast('Your local changes were kept and uploaded ✓');
+    if (!data) {
+      // No cloud data yet — push what we have
+      pushToCloud();
       return;
     }
 
-    // Cloud is newer (or equal) → apply it
-    applyCloudSchedule(cloud);
+    // ── Restore schedule ──────────────────────────────
+    const cloudData = data.week_data || {};
+    for (let i = 0; i < 7; i++) {
+      if (Array.isArray(cloudData[i]) && cloudData[i].length > 0) {
+        weekData[i] = cloudData[i];
+      }
+    }
+    normalizeMidnightBlocks();
+    for (let i = 0; i < 7; i++) {
+      if (!weekData[i] || !Array.isArray(weekData[i]) || weekData[i].length === 0) {
+        weekData[i] = getTemplate(i);
+      }
+      weekData[i].sort((a, b) => sortKey(a) - sortKey(b));
+    }
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(weekData)); } catch(e) {}
+
+    // ── Restore theme ─────────────────────────────────
+    if (data.accent) {
+      try { localStorage.setItem(ACCENT_KEY, data.accent); } catch(e) {}
+      applyAccent(data.accent);
+    }
+    if (data.brightness) {
+      try { localStorage.setItem(BRIGHTNESS_KEY, data.brightness); } catch(e) {}
+      applyBrightness(data.brightness);
+    }
+
+    // ── Restore user defaults ─────────────────────────
+    if (data.user_defaults && typeof data.user_defaults === 'object') {
+      try { localStorage.setItem(USER_DEFAULT_KEY, JSON.stringify(data.user_defaults)); } catch(e) {}
+    }
+
+    renderTabs();
+    renderSchedule();
+    syncUndoButton();
+    syncSaveDefaultButton();
     setSyncState('ok');
-    showToast('Schedule loaded from cloud ✓');
+    showToast('Settings loaded from cloud ✓');
   } catch(e) {
-    console.warn('[IZ] Reconcile failed:', e);
     setSyncState('error');
+    console.warn('[IZ] Pull error:', e);
   }
 }
 
@@ -2651,54 +2532,6 @@ function clearUserDefault() {
   showToast('Custom default cleared — factory template will be used');
 }
 
-// ─────────────────────────────────────────────────────
-// APPLY DAY TO OTHER DAYS
-// ─────────────────────────────────────────────────────
-function cloneDayToTargets(sourceDay, targetDays) {
-  const source = clone(weekData[sourceDay]);
-  targetDays.forEach(dayIdx => {
-    if (dayIdx === sourceDay) return;
-    weekData[dayIdx] = clone(source).sort((a, b) => sortKey(a) - sortKey(b));
-  });
-  cloudSave();
-  renderTabs();
-  renderSchedule();
-}
-
-function applyCurrentDayToAllDays() {
-  cloneDayToTargets(currentDay, [0,1,2,3,4,5,6]);
-  showToast(`${DAYS[currentDay]} applied to all days ✓`);
-}
-
-function applyCurrentDayToWeekdays() {
-  cloneDayToTargets(currentDay, [0,1,2,3,4]);
-  showToast(`${DAYS[currentDay]} applied to weekdays ✓`);
-}
-
-function applyCurrentDayToWeekends() {
-  cloneDayToTargets(currentDay, [5,6]);
-  showToast(`${DAYS[currentDay]} applied to weekend days ✓`);
-}
-
-let _applyDayMenuOpen = false;
-
-function toggleApplyDayMenu() {
-  _applyDayMenuOpen = !_applyDayMenuOpen;
-  const menu = document.getElementById('applyDayMenu');
-  if (menu) menu.classList.toggle('open', _applyDayMenuOpen);
-}
-
-function closeApplyDayMenu() {
-  _applyDayMenuOpen = false;
-  const menu = document.getElementById('applyDayMenu');
-  if (menu) menu.classList.remove('open');
-}
-
-// Close menu if user clicks outside it
-document.addEventListener('click', e => {
-  if (!e.target.closest('#applyDayMenuWrap')) closeApplyDayMenu();
-});
-
 function syncSaveDefaultButton() {
   const btn = document.getElementById('saveDefaultBtn');
   if (!btn) return;
@@ -2782,7 +2615,7 @@ const BRIGHTNESS = ['espresso', 'dark', 'light', 'warm'];
 const ACCENT_KEY     = 'iz-accent-v1';
 const BRIGHTNESS_KEY = 'iz-brightness-v1';
 
-function applyAccent(name, shouldPersist = true) {
+function applyAccent(name) {
   const accent = ACCENTS.includes(name) ? name : 'espresso';
   if (accent === 'espresso') {
     document.documentElement.removeAttribute('data-accent');
@@ -2793,10 +2626,10 @@ function applyAccent(name, shouldPersist = true) {
     btn.classList.toggle('active', btn.dataset.accent === accent);
   });
   try { localStorage.setItem(ACCENT_KEY, accent); } catch(e) {}
-  if (shouldPersist) cloudSave();
+  cloudSave();
 }
 
-function applyBrightness(name, shouldPersist = true) {
+function applyBrightness(name) {
   const b = BRIGHTNESS.includes(name) ? name : 'espresso';
   if (b === 'espresso') {
     document.documentElement.removeAttribute('data-brightness');
@@ -2807,7 +2640,7 @@ function applyBrightness(name, shouldPersist = true) {
     btn.classList.toggle('active', btn.dataset.brightness === b);
   });
   try { localStorage.setItem(BRIGHTNESS_KEY, b); } catch(e) {}
-  if (shouldPersist) cloudSave();
+  cloudSave();
 }
 
 function loadTheme() {
@@ -2815,8 +2648,8 @@ function loadTheme() {
   try { accent     = localStorage.getItem(ACCENT_KEY)     || 'espresso'; } catch(e) {}
   try { brightness = localStorage.getItem(BRIGHTNESS_KEY) || 'espresso'; } catch(e) {}
 
-  applyAccent(accent, false);
-  applyBrightness(brightness, false);
+  applyAccent(accent);
+  applyBrightness(brightness);
 }
 
 // ─────────────────────────────────────────────────────
@@ -3223,7 +3056,7 @@ if (_sb) {
     _sbUser = session?.user ?? null;
     renderUserPill(_sbUser);
     if (_sbUser) {
-      await reconcileAfterSignIn();
+      await pullFromCloud();
     }
   });
 
@@ -3231,7 +3064,7 @@ if (_sb) {
   _sb.auth.getSession().then(({ data: { session } }) => {
     _sbUser = session?.user ?? null;
     renderUserPill(_sbUser);
-    if (_sbUser) reconcileAfterSignIn();
+    if (_sbUser) pullFromCloud();
   });
 }
 </script>
